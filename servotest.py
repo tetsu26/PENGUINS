@@ -24,19 +24,34 @@ pwm.set_pwm_freq(50)
 print('please choose modes: 1:Kakudo 2:EXAMINATION')
 x=input()
 if x==1:
-    while True:
-        y=input("pulse width(700-2300):")
+    x=input("which servo(0or1):")
+    if x==0:
+        while True:
+            y=input("CH:0 pulse width(700-2300):")
         y=int(y)
         set_servo_pulse(0,y)
+    else:
+        while True:
+            y=input("CH:1 pulse width(700-2300):")
+        y=int(y)
+        set_servo_pulse(1,y)
+    
 if x==2:
-    y=input("initial pulse width(700-23000):")
-    y=int(y)
-    set_servo_pulse(0,y)
-    b=input("target pulse width(700-2300):")
-    b=int(b)
-    print("initial:",y,"target:",b)
+    i0=input("CH:0 initial pulse width(700-23000):")
+    i0=int(i0)
+    set_servo_pulse(0,i0)
+    t0=input("CH:0 target pulse width(700-2300):")
+    t0=int(t0)
+    i1=input("CH:1 initial pulse width(700-23000):")
+    i1=int(i1)
+    set_servo_pulse(1,i1)
+    t1=input("CH:1 target pulse width(700-2300):")
+    t1=int(t1)
+    print("CH:0 initial:",i0,"target:",t0)
+    print("CH:1 initial:",i1,"target:",t1)
     z=input("If you are ready, press 'y':")
     if z==y:
         a=input("really?:")
-	if a==y:
-            set_servo_pulse(0,b)
+	    if a==y:
+            set_servo_pulse(0,t0)
+            set_servo_pulse(1,t1)
