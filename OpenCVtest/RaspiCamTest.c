@@ -9,6 +9,7 @@
 
 #include <opencv/cv.h>
 #include <opencv/highgui.h>
+#include <opencv/aruco.hpp>
 #include <stdio.h>
 #include <unistd.h>
 #include "RaspiCamCV.h"
