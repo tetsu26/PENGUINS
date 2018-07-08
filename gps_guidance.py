@@ -5,10 +5,25 @@ import smbus
 import time
 import math
 
-# Strawberry Linux社の「MPU-9250」からI2Cでデータを取得するクラス(python 2)
-# https://strawberry-linux.com/catalog/items?code=12250
-#
-# 2016-05-03 Boyaki Machine
+import serial
+import micropyGPS
+import threading
+import pyproj
+
+#座標たち
+LNS=[38.267922, 140.849301]#ローソン南極支店の座標(天野邸)
+LNS_xy=[38.28005833,140.85160667]#ローソン南極支店のxy座標
+Penguin1_pos=[0.0,0.0]#ペンギン1号の座標
+Penguin1_pos_xy=[0.0,0.0]#ペンギン1号のxy座標
+
+#グローバル変数たち
+orientation_deg  = 0.0
+current_deg      = 0.0
+ddeg             = 0.0
+
+gps = micropyGPS.MicropyGPS(9,'dd')
+
+
 class SL_MPU9250:
     # 定数宣言
     REG_PWR_MGMT_1      = 0x6B
@@ -249,6 +264,7 @@ class SL_MPU9250:
             # オーバーフローのため正しい値が得られていない
             raise Exception('004 Mag sensor over flow')
 
+##############################ここは手動で入力#######################################
         manual_offsetMagX  = -12.0
         manual_offsetMagY  = -4.0
         manual_offsetMagZ  = 0.0
@@ -332,8 +348,62 @@ class SL_MPU9250:
         print "Gyro calibration complete"
         return self.offsetGyroX, self.offsetGyroY, self.offsetGyroZ
 
+###################################################################################
+
+def rungps():#gpsやつ
+    s = serial.Serial('/dev/serial0', 9600, timeout=10)
+    s.readline() # 最初の1行は中途半端なデーターが読めることがあるので、捨てる
+    while True:
+        sentence = s.readline().decode('utf-8') # GPSデーターを読み、文字列に変換する
+        if sentence[0] != '$': # 先頭が'$'でなければ捨てる
+            continue
+        for x in sentence: # 読んだ文字列を解析してGPSオブジェクトにデーターを追加、更新する
+            gps.update(x)
+
+gpsthread = threading.Thread(target=rungps, args=()) # 上の関数を実行するスレッドを生成
+gpsthread.daemon = True
+gpsthread.start() # スレッドを起動
+
+def getgps():
+    while gps.clean_sentences < 20:# ちゃんとしたデーターがある程度たまったら出力する
+        time.sleep(0.1)
+
+    h = gps.timestamp[0] if gps.timestamp[0] < 24 else gps.timestamp[0] - 24
+    #print('%2d:%02d:%04.1f' % (h, gps.timestamp[1], gps.timestamp[2]))
+    print('緯度経度: %2.8f, %2.8f' % (gps.latitude[0], gps.longitude[0]))
+    #print('海抜: %f' % gps.altitude)
+
+    #座標変換
+    Penguin1_pos  = [round(gps.latitude[0],8),round(gps.longitude[0],8)]#小数点8桁以上だとエラー出るので7桁まで
+
+    EPSG4612 = pyproj.Proj("+init=EPSG:4612")
+    EPSG2452 = pyproj.Proj("+init=EPSG:2452")#東北地方中心平面直角座標系10経
+
+    LNS_xy[1],LNS_xy[0] = pyproj.transform(EPSG4612, EPSG2452, LNS[1], LNS[0] )#x,yが逆なので注意（ここで2時間溶かした）
+    Penguin1_pos_xy[1],Penguin1_pos_xy[0] = pyproj.transform(EPSG4612, EPSG2452, Penguin1_pos[1], Penguin1_pos[0] )
+    dx=LNS_xy[0]-Penguin1_pos_xy[0]#LNSまでのx座標の差
+    dy=LNS_xy[1]-Penguin1_pos_xy[1]#LNSまでのy座標の差
+    distance=math.sqrt(dx**2+dy**2)#LNSまでの距離
+    global orientation_deg
+    #LNSへの角度
+    if(dy>0):
+        orientation_deg=math.degrees(math.acos(dx/distance))
+    else:
+        orientation_deg=-math.degrees(math.acos(dx/distance))
+
+    #print Penguin1_pos_xy
+    #print LNS_xy
+    print ("distance:%f"%distance)
+    print ("orientation_deg:%f"%orientation_deg)
+    #print('')
+###################################################################################
+
+
+
+
 
 if __name__ == "__main__":
+    #MPU9250
     sensor  = SL_MPU9250(0x68,1)
     sensor.resetRegister()
     sensor.powerWakeUp()
@@ -341,9 +411,19 @@ if __name__ == "__main__":
     sensor.setGyroRange(1000,True)
     sensor.setMagRegister('100Hz','16bit')
     # sensor.selfTestMag()
-    
+    mag_correction=8.1#磁北を真北に補正する奴仙台では8.1　能代では8.9 
+
+    #グローバル変数とか
+    global orientation_deg
+    global current_deg
+    global ddeg
+    range = 30#目標角への許容誤差(プラスマイナスrange度)
+
+    #ログ
     f=open('PENGUIN_log.txt','a')
     f.write("\n===============New Log From Here dazo!===============\n")
+
+
     while True:
         now     = time.time()
         acc     = sensor.getAccel()
@@ -351,9 +431,20 @@ if __name__ == "__main__":
         mag     = sensor.getMag()
 #        deg     = math.acos(mag[1]/math.sqrt(mag[0]**2+mag[1]**2))
         if(mag[1]<0):
-            current_deg     = math.degrees(math.acos(mag[0]/math.sqrt(mag[0]**2+mag[1]**2))) 
+            current_deg     = math.degrees(math.acos(mag[0]/math.sqrt(mag[0]**2+mag[1]**2))) - mag_correction
         else:
-            current_deg     = -math.degrees(math.acos(mag[0]/math.sqrt(mag[0]**2+mag[1]**2)))
+            current_deg     = -math.degrees(math.acos(mag[0]/math.sqrt(mag[0]**2+mag[1]**2))) - mag_correction
+
+        getgps()#GPSデータ取得
+
+        ddeg=orientation_deg-current_deg#現在向いている方向とLNSへの方向の差
+        
+        #角度の差をプラスマイナス180度表示
+        if (ddeg>180):
+            ddeg = ddeg -360
+        elif(ddeg<-180):
+            ddeg = ddeg + 360
+
 #        print "%+8.7f" % acc[0] + " ",
 #        print "%+8.7f" % acc[1] + " ",
 #        print "%+8.7f" % acc[2] + " ",
@@ -363,13 +454,21 @@ if __name__ == "__main__":
 #        print "%+8.7f" % gyr[2] + " ",
 #        print " |   ",
 
-        print "%+8.7f" % mag[0] + " ",
-        print "%+8.7f" % mag[1] + " ",
-        print "%+8.7f" % mag[2] + " ",
-        print current_deg
-        f.write(str(mag[0]) + "," + str(mag[1]) + "," + str(mag[2]) + "\n")
+#        print "%+8.7f" % mag[0] + " ",
+#        print "%+8.7f" % mag[1] + " ",
+#        print "%+8.7f" % mag[2] + " ",
+        print ("current_deg:%f"%current_deg)
+        print ("ddeg:%f"%ddeg)
+        if (ddeg>range):
+            print ("Turn Rght dazo~")
+        elif (ddeg<-range):
+            print ("Turn Left dazo~")
+        else :
+            print ("Go Straight dazo~")
+        f.write(str(acc[0]) + "," + str(acc[1]) + "," + str(acc[2]) + str(gyr[0]) + "," + str(gyr[1]) + "," + str(gyr[2]) + str(mag[0]) + "," + str(mag[1]) + "," + str(mag[2]))
+        f.write(str(Penguin1_pos)+","+str(orientation_deg)+","+str(current_deg)+","+str(ddeg)+"\n")
         sleepTime       = 0.1 - (time.time() - now)
         if sleepTime < 0.0:
             continue
         time.sleep(sleepTime)
-
+        time.sleep(0.1)
