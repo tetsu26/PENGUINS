@@ -45,9 +45,9 @@ class SL_MPU9250:
 
     offsetRoomTemp      = 0
     tempSensitivity     = 333.87
-    gyroRange           = 250       # 'dps' 00:250, 01:500, 10:1000, 11:2000
-    accelRange          = 2         # 'g' 00:±2, 01:±4, 10:±8, 11:±16
-    magRange            = 4912      # 'μT'  
+    gyroRange           = 250       # dps 00:250, 01:500, 10:1000, 11:2000
+    accelRange          = 2         # g 00:±2, 01:±4, 10:±8, 11:±16
+    magRange            = 4912      # μT
 
     offsetAccelX        = 0.0
     offsetAccelY        = 0.0
@@ -121,7 +121,7 @@ class SL_MPU9250:
             _writeData      = 0x01
             self.MAG_MODE   = self.MAG_MODE_SINGLE
 
-        #　出力するbit数 
+        #出力するbit数 
         if _bit=='14bit':           # 14bit出力
             _writeData      = _writeData | 0x00
             self.MAG_BIT    = 14
@@ -275,9 +275,9 @@ class SL_MPU9250:
             rawY    = rawY * self.magCoefficient16 + manual_offsetMagY
             rawZ    = rawZ * self.magCoefficient16 + manual_offsetMagZ
         else:                   # 14bit出力の時
-            rawX    = rawX * self.magCoefficient14 + manual_offsetMagX
-            rawY    = rawY * self.magCoefficient14 + manual_offsetMagY
-            rawZ    = rawZ * self.magCoefficient14 + manual_offsetMagZ
+            rawX    = raw*0.8+(rawX * self.magCoefficient14 + manual_offsetMagX)*0.2
+            rawY    = raw*0.8+(rawY * self.magCoefficient14 + manual_offsetMagY)*0.2
+            rawZ    = raw*0.8+(rawZ * self.magCoefficient14 + manual_offsetMagZ)*0.2
 
         return rawX, rawY, rawZ
 
