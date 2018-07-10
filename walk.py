@@ -52,8 +52,8 @@ for i in range(10):
 	ang2+=9
 """
 
-global servo_angle,pulse_servo
-servo_angle=[5,10,10,10,110,100,100,100,90,90,90,90]
+global servo_angle,pulse_servo 
+servo_angle=[10,10,10,10,95,95,90,90,120,120,120,120] 
 pulse_servo=[0,0,0,0,0,0,0,0,0,0,0,0]
 
 def angle_conv():
@@ -62,49 +62,53 @@ def angle_conv():
         return pulse_servo
 
 def leg_move(servo_num,ang_ser):
-	servo_angle[servo_num-4] -= 20
+	servo_angle[servo_num-4] -= 45
 	angle_conv() 
-	print(servo_angle[servo_num-4])
+	#print(servo_angle[servo_num-4])
 	set_servo_pulse(servo_num-4,pulse_servo[servo_num-4])
 	time.sleep(0.1)
 	servo_angle[servo_num] += ang_ser
         angle_conv()
-        print(servo_angle[servo_num])
+        #print(servo_angle[servo_num])
         set_servo_pulse(servo_num,pulse_servo[servo_num])
 	time.sleep(0.1)
-	servo_angle[servo_num-4] += 20
+	servo_angle[servo_num-4] += 45
         angle_conv()
-        print(servo_angle[servo_num-4])
+        #print(servo_angle[servo_num-4])
         set_servo_pulse(servo_num-4,pulse_servo[servo_num-4])
         time.sleep(0.1)
 
 def body_move(servo_num,ang_ser):
 	servo_angle[servo_num] += ang_ser
         angle_conv()
-        print(servo_angle[servo_num])
+        #print(servo_angle[servo_num])
         set_servo_pulse(servo_num,pulse_servo[servo_num])
-        #time.sleep(0.05)
+        #time.sleep(0.1)
 
 angle_conv()
 for i in range(12):
 	set_servo_pulse(i,pulse_servo[i])
 	time.sleep(0.1)
-leg_move(9,20)
-leg_move(8,20)
-for k in range(10):
+leg_move(8,-30)
+leg_move(9,30)
+for k in range(5):
+	leg_move(8,60)
+	#print(servo_angle)
+	body_move(8,-30)
+	body_move(11,30)
+	body_move(9,-30)
+	body_move(10,30)
+	time.sleep(0.2)
 	print(servo_angle)
-	body_move(8,-20)
-	body_move(11,20)
-	body_move(9,-20)
-	body_move(10,20)
+	leg_move(10,-60)
+	leg_move(11,-60)
+	body_move(8,-30)
+	body_move(11,30)
+	body_move(9,-30)
+	body_move(10,30)
+	time.sleep(0.2)
+	leg_move(9,60)
 	print(servo_angle)
-	leg_move(10,-40)
-	leg_move(11,-40)
-	body_move(8,-20)
-	body_move(11,20)
-	body_move(9,-20)
-	body_move(10,20)
-	leg_move(9,40)
 	
 for i in range(16):
   pwm.set_pwm(i, 0, 0)

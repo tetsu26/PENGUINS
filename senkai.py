@@ -90,7 +90,7 @@ for i in range(12):
 	set_servo_pulse(i,pulse_servo[i])
         time.sleep(0.1)
 
-def turn(ang_turn)
+def turn(ang_turn):
 	ang_turn = ang_turn / 4.0
 	for k in range(4):
 		leg_move(9,ang_turn)
@@ -102,6 +102,8 @@ def turn(ang_turn)
 		body_move(10,-ang_turn)
 		body_move(11.-ang_turn)
 
+ang_turn = input()
+turn(ang_turn)
 for i in range(16):
   pwm.set_pwm(i, 0, 0)
 
