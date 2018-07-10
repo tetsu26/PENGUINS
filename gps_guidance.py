@@ -11,7 +11,7 @@ import threading
 import pyproj
 
 #座標たち
-LNS=[38.267922, 140.849301]#ローソン南極支店の座標(天野邸)
+LNS=[38.267834, 140.849264]#ローソン南極支店の座標(天野邸)
 LNS_xy=[38.28005833,140.85160667]#ローソン南極支店のxy座標
 Penguin1_pos=[0.0,0.0]#ペンギン1号の座標
 Penguin1_pos_xy=[0.0,0.0]#ペンギン1号のxy座標
@@ -374,7 +374,7 @@ def getgps():
     #print('海抜: %f' % gps.altitude)
 
     #座標変換
-    Penguin1_pos  = [round(gps.latitude[0],8),round(gps.longitude[0],8)]#小数点8桁以上だとエラー出るので7桁まで
+    Penguin1_pos  = [round(gps.latitude[0],9),round(gps.longitude[0],9)]#小数点8桁以上だとエラー出るので7桁まで
 
     EPSG4612 = pyproj.Proj("+init=EPSG:4612")
     EPSG2452 = pyproj.Proj("+init=EPSG:2452")#東北地方中心平面直角座標系10経

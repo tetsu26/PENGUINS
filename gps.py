@@ -8,10 +8,10 @@ import time
 import pyproj
 import math
 
-LNS=[38.267922, 140.849301]#ローソン南極支店の座標(天野邸)
-LNS_xy=[38.28005833,140.85160667]#ローソン南極支店のxy座標
-Penguin1_pos=[0.0,0.0]#ペンギン1号の座標
-Penguin1_pos_xy=[0.0,0.0]#ペンギン1号のxy座標
+LNS=[38.267922, 140.849301] #ローソン南極支店の座標(天野邸)
+LNS_xy=[38.28005833,140.85160667] #ローソン南極支店のxy座標
+Penguin1_pos=[0.0,0.0] #ペンギン1号の座標
+Penguin1_pos_xy=[0.0,0.0] #ペンギン1号のxy座標
 
 gps = micropyGPS.MicropyGPS(9,'dd')
 
@@ -39,16 +39,16 @@ def getgps():
     print('海抜: %f' % gps.altitude)
 
     #座標変換
-    Penguin1_pos  = [round(gps.latitude[0],8),round(gps.longitude[0],8)]#小数点8桁以上だとエラー出るので7桁まで
+    Penguin1_pos  = [round(gps.latitude[0],8),round(gps.longitude[0],8)] #小数点8桁以上だとエラー出るので7桁まで
 
     EPSG4612 = pyproj.Proj("+init=EPSG:4612")
-    EPSG2452 = pyproj.Proj("+init=EPSG:2452")#東北地方中心平面直角座標系10経
+    EPSG2452 = pyproj.Proj("+init=EPSG:2452") #東北地方中心平面直角座標系10経
 
-    LNS_xy[1],LNS_xy[0] = pyproj.transform(EPSG4612, EPSG2452, LNS[1], LNS[0] )#x,yが逆なので注意（ここで2時間溶かした）
+    LNS_xy[1],LNS_xy[0] = pyproj.transform(EPSG4612, EPSG2452, LNS[1], LNS[0] ) #x,yが逆なので注意（ここで2時間溶かした）
     Penguin1_pos_xy[1],Penguin1_pos_xy[0] = pyproj.transform(EPSG4612, EPSG2452, Penguin1_pos[1], Penguin1_pos[0] )       
-    dx=LNS_xy[0]-Penguin1_pos_xy[0]#LNSまでのx座標の差
-    dy=LNS_xy[1]-Penguin1_pos_xy[1]#LNSまでのy座標の差
-    distance=math.sqrt(dx**2+dy**2)#LNSまでの距離
+    dx=LNS_xy[0]-Penguin1_pos_xy[0] #LNSまでのx座標の差
+    dy=LNS_xy[1]-Penguin1_pos_xy[1] #LNSまでのy座標の差
+    distance=math.sqrt(dx**2+dy**2) #LNSまでの距離
     #LNSへの角度
     if(dy>0):
         orientation_deg=math.degrees(math.acos(dx/distance))
