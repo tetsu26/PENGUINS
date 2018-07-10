@@ -1,6 +1,8 @@
+using namespace std;
 #include <opencv2/core.hpp>
-#include <opencv2/aruco.hpp>
+#include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
+#include <opencv2/aruco.hpp>
 
 int main(int argc, const char* argv[])
 {

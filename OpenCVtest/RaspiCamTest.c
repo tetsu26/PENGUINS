@@ -6,13 +6,14 @@
  License: http://www.opensource.org/licenses/bsd-license.php
 
 */
-
-#include <opencv/cv.h>
-#include <opencv/highgui.h>
-#include <opencv/aruco.hpp>
+using namespace std;
+#include <opencv/cv.hpp>
+//#include <opencv2/highgui.hpp>
+#include <opencv2/aruco.hpp>
 #include <stdio.h>
 #include <unistd.h>
 #include "RaspiCamCV.h"
+using namespace cv;
 
 int main(int argc, char *argv[ ]){
 
