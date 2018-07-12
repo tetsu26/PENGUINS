@@ -265,8 +265,8 @@ class SL_MPU9250:
             raise Exception('004 Mag sensor over flow')
 
 ##############################ここは手動で入力#######################################
-        manual_offsetMagX  = -12.0
-        manual_offsetMagY  = -4.0
+        manual_offsetMagX  = -2.5
+        manual_offsetMagY  = -25.0
         manual_offsetMagZ  = 0.0
 
         # μTへの変換
@@ -275,9 +275,9 @@ class SL_MPU9250:
             rawY    = rawY * self.magCoefficient16 + manual_offsetMagY
             rawZ    = rawZ * self.magCoefficient16 + manual_offsetMagZ
         else:                   # 14bit出力の時
-            rawX    = raw*0.8+(rawX * self.magCoefficient14 + manual_offsetMagX)*0.2
-            rawY    = raw*0.8+(rawY * self.magCoefficient14 + manual_offsetMagY)*0.2
-            rawZ    = raw*0.8+(rawZ * self.magCoefficient14 + manual_offsetMagZ)*0.2
+            rawX    = raw*0.9+(rawX * self.magCoefficient14 + manual_offsetMagX)*0.1
+            rawY    = raw*0.9+(rawY * self.magCoefficient14 + manual_offsetMagY)*0.1
+            rawZ    = raw*0.9+(rawZ * self.magCoefficient14 + manual_offsetMagZ)*0.1
 
         return rawX, rawY, rawZ
 
@@ -416,7 +416,8 @@ if __name__ == "__main__":
     sensor.setGyroRange(1000,True)
     sensor.setMagRegister('100Hz','16bit')
     # sensor.selfTestMag()
-    mag_correction=8.1#磁北を真北に補正する奴仙台では8.1　能代では8.9 
+    mag_correction1 = 8.1 #磁北を真北に補正する奴仙台では8.1　能代では8.9 
+    mag_correction2 = 45  #センサーの前方向とペンギンの前方向を一致させる補正係数
 
     #グローバル変数とか
     global orientation_deg
@@ -436,9 +437,14 @@ if __name__ == "__main__":
         mag     = sensor.getMag()
 #        deg     = math.acos(mag[1]/math.sqrt(mag[0]**2+mag[1]**2))
         if(mag[1]<0):
-            current_deg     = math.degrees(math.acos(mag[0]/math.sqrt(mag[0]**2+mag[1]**2))) - mag_correction
+            current_deg     = math.degrees(math.acos(mag[0]/math.sqrt(mag[0]**2+mag[1]**2))) - mag_correction1 - mag_correction2
         else:
-            current_deg     = -math.degrees(math.acos(mag[0]/math.sqrt(mag[0]**2+mag[1]**2))) - mag_correction
+            current_deg     = -math.degrees(math.acos(mag[0]/math.sqrt(mag[0]**2+mag[1]**2))) - mag_correction1 - mag_correction2
+
+        if (current_deg>180):
+            current_deg = current_deg -360
+        elif(current_deg<-180):
+            current_deg = current_deg + 360
 
         getgps()#GPSデータ取得
 
@@ -454,9 +460,9 @@ if __name__ == "__main__":
 #        print "%+8.7f" % acc[1] + " ",
 #        print "%+8.7f" % acc[2] + " ",
 #        print " |   ",
-#        print "%+8.7f" % gyr[0] + " ",
-#        print "%+8.7f" % gyr[1] + " ",
-#        print "%+8.7f" % gyr[2] + " ",
+        print "%+8.7f" % gyr[0] + " ",
+        print "%+8.7f" % gyr[1] + " ",
+        print "%+8.7f" % gyr[2] + "\n ",
 #        print " |   ",
 
 #        print "%+8.7f" % mag[0] + " ",
@@ -477,4 +483,4 @@ if __name__ == "__main__":
             continue
         time.sleep(sleepTime)
         time.sleep(0.1)
-v
+
