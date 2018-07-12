@@ -379,8 +379,13 @@ def getgps():
     EPSG4612 = pyproj.Proj("+init=EPSG:4612")
     EPSG2452 = pyproj.Proj("+init=EPSG:2452")#東北地方中心平面直角座標系10経
 
-    LNS_xy[1],LNS_xy[0] = pyproj.transform(EPSG4612, EPSG2452, LNS[1], LNS[0] )#x,yが逆なので注意（ここで2時間溶かした）
-    Penguin1_pos_xy[1],Penguin1_pos_xy[0] = pyproj.transform(EPSG4612, EPSG2452, Penguin1_pos[1], Penguin1_pos[0] )
+
+    if(Penguin1_pos[1] != 0.0):
+        LNS_xy[1],LNS_xy[0] = pyproj.transform(EPSG4612, EPSG2452, LNS[1], LNS[0] )#x,yが逆なので注意（ここで2時間溶かした）
+        Penguin1_pos_xy[1],Penguin1_pos_xy[0] = pyproj.transform(EPSG4612, EPSG2452, Penguin1_pos[1], Penguin1_pos[0] )
+    else:
+        print ("We are at Gulf of Guinea")
+
     dx=LNS_xy[0]-Penguin1_pos_xy[0]#LNSまでのx座標の差
     dy=LNS_xy[1]-Penguin1_pos_xy[1]#LNSまでのy座標の差
     distance=math.sqrt(dx**2+dy**2)#LNSまでの距離
@@ -472,3 +477,4 @@ if __name__ == "__main__":
             continue
         time.sleep(sleepTime)
         time.sleep(0.1)
+v

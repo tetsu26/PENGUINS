@@ -40,7 +40,7 @@ def getgps():
 
     #座標変換
     Penguin1_pos  = [round(gps.latitude[0],8),round(gps.longitude[0],8)] #小数点8桁以上だとエラー出るので7桁まで
-
+'''
     EPSG4612 = pyproj.Proj("+init=EPSG:4612")
     EPSG2452 = pyproj.Proj("+init=EPSG:2452") #東北地方中心平面直角座標系10経
 
@@ -60,7 +60,7 @@ def getgps():
     print distance
     print orientation_deg
     print('')
- 
+ '''
 if __name__ == "__main__":
     getgps()
     print ("gotgps")
