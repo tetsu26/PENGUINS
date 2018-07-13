@@ -10,17 +10,6 @@ import micropyGPS
 import threading
 import pyproj
 
-#座標たち
-LNS=[38.267834, 140.849264]#ローソン南極支店の座標(天野邸)
-LNS_xy=[38.28005833,140.85160667]#ローソン南極支店のxy座標
-Penguin1_pos=[0.0,0.0]#ペンギン1号の座標
-Penguin1_pos_xy=[0.0,0.0]#ペンギン1号のxy座標
-
-#グローバル変数たち
-orientation_deg  = 0.0
-current_deg      = 0.0
-ddeg             = 0.0
-
 gps = micropyGPS.MicropyGPS(9,'dd')
 
 
@@ -374,37 +363,115 @@ def getgps():
     #print('海抜: %f' % gps.altitude)
 
     #座標変換
-    Penguin1_pos  = [round(gps.latitude[0],9),round(gps.longitude[0],9)]#小数点8桁以上だとエラー出るので7桁まで
+    data.Penguin1_pos  = [round(gps.latitude[0],9),round(gps.longitude[0],9)]#小数点8桁以上だとエラー出るので7桁まで
 
     EPSG4612 = pyproj.Proj("+init=EPSG:4612")
     EPSG2452 = pyproj.Proj("+init=EPSG:2452")#東北地方中心平面直角座標系10経
 
 
-    if(Penguin1_pos[1] != 0.0):
-        LNS_xy[1],LNS_xy[0] = pyproj.transform(EPSG4612, EPSG2452, LNS[1], LNS[0] )#x,yが逆なので注意（ここで2時間溶かした）
-        Penguin1_pos_xy[1],Penguin1_pos_xy[0] = pyproj.transform(EPSG4612, EPSG2452, Penguin1_pos[1], Penguin1_pos[0] )
+    if(data.Penguin1_pos[1] != 0.0):
+        data.LNS_xy[1],data.LNS_xy[0] = pyproj.transform(EPSG4612, EPSG2452, data.LNS[1], data.LNS[0] )#x,yが逆なので注意（ここで2時間溶かした）
+        data.Penguin1_pos_xy[1],data.Penguin1_pos_xy[0] = pyproj.transform(EPSG4612, EPSG2452, data.Penguin1_pos[1], data.Penguin1_pos[0] )
     else:
         print ("We are at Gulf of Guinea")
 
-    dx=LNS_xy[0]-Penguin1_pos_xy[0]#LNSまでのx座標の差
-    dy=LNS_xy[1]-Penguin1_pos_xy[1]#LNSまでのy座標の差
-    distance=math.sqrt(dx**2+dy**2)#LNSまでの距離
-    global orientation_deg
+    dx=data.LNS_xy[0]-data.Penguin1_pos_xy[0]#LNSまでのx座標の差
+    dy=data.LNS_xy[1]-data.Penguin1_pos_xy[1]#LNSまでのy座標の差
+    data.distance=math.sqrt(dx**2+dy**2)#LNSまでの距離
+#    global orientation_deg
     #LNSへの角度
     if(dy>0):
-        orientation_deg=math.degrees(math.acos(dx/distance))
+        data.orientation_deg=math.degrees(math.acos(dx/data.distance))
     else:
-        orientation_deg=-math.degrees(math.acos(dx/distance))
+        data.orientation_deg=-math.degrees(math.acos(dx/data.distance))
 
     #print Penguin1_pos_xy
     #print LNS_xy
-    print ("distance:%f"%distance)
-    print ("orientation_deg:%f"%orientation_deg)
+    print ("distance:%f"%data.distance)
+    print ("orientation_deg:%f"%data.orientation_deg)
     #print('')
 ###################################################################################
 
+class Data:
+    
+    now               =  0.0
+    acc               =  [0.0,0.0,0.0] 
+    gyr               =  [0.0,0.0,0.0]
+    mag               =  [0.0,0.0,0.0]
+
+    current_deg       =  0.0
+
+    distance          =  0.0
+    #元グローバル変数とか
+    orientation_deg   =  0.0
+    current_deg       =  0.0
+    ddeg              =  0.0
+    range             =  30 #目標角への許容誤差(プラスマイナスrange度)
+   
+    #座標
+    LNS=[38.267834, 140.849264]#ローソン南極支店の座標(天野邸)
+    LNS_xy=[38.28005833,140.85160667]#ローソン南極支店のxy座標
+    Penguin1_pos=[0.0,0.0]#ペンギン1号の座標
+    Penguin1_pos_xy=[0.0,0.0]#ペンギン1号のxy座標
+
+ 
+    def __init__(self):
+    #ログ
+        self.f=open('PENGUIN_log.txt','a')
+        self.f.write("\n===============New Log From Here dazo!===============\n")
 
 
+    def save_data(self):
+        self.f.write(str(self.acc[0]) + "," + str(self.acc[1]) + "," + str(self.acc[2]) + str(self.gyr[0]) + "," + str(self.gyr[1]) + "," + str(self.gyr[2]) + str(self.mag[0]) + "," + str(self.mag[1]) + "," + str(self.mag[2]))
+        self.f.write(str(self.Penguin1_pos)+","+str(self.orientation_deg)+","+str(self.current_deg)+","+str(self.ddeg)+"\n")
+
+def get_data():
+    data.now     = time.time()
+    data.acc     = sensor.getAccel()
+    data.gyr     = sensor.getGyro()
+    data.mag     = sensor.getMag()
+#    deg     = math.acos(mag[1]/math.sqrt(mag[0]**2+mag[1]**2))
+    if(data.mag[1]<0):
+        data.current_deg     = math.degrees(math.acos(data.mag[0]/math.sqrt(data.mag[0]**2+data.mag[1]**2))) - mag_correction1 - mag_correction2
+    else:
+        data.current_deg     = -math.degrees(math.acos(data.mag[0]/math.sqrt(data.mag[0]**2+data.mag[1]**2))) - mag_correction1 - mag_correction2
+
+    if (data.current_deg>180):
+        data.current_deg = data.current_deg -360
+    elif(data.current_deg<-180):
+        data.current_deg = data.current_deg + 360
+
+    getgps()#GPSデータ取得
+
+    data.ddeg=data.orientation_deg-data.current_deg#現在向いている方向とLNSへの方向の差
+
+        #角度の差をプラスマイナス180度表示
+    if (data.ddeg>180):
+        data.ddeg = data.ddeg -360
+    elif(data.ddeg<-180):
+       data.ddeg = data.ddeg + 360
+#   print "%+8.7f" % acc[0] + " ",
+#   print "%+8.7f" % acc[1] + " ",
+#   print "%+8.7f" % acc[2] + " ",
+#   print " |   ",
+    print "%+8.7f" % data.gyr[0] + " ",
+    print "%+8.7f" % data.gyr[1] + " ",
+    print "%+8.7f" % data.gyr[2] 
+#        print " |   ",
+
+#        print "%+8.7f" % mag[0] + " ",
+#        print "%+8.7f" % mag[1] + " ",
+#        print "%+8.7f" % mag[2] + " ",
+    print ("current_deg:%f"%data.current_deg)
+    print ("ddeg:%f"%data.ddeg)
+    if (data.ddeg>data.range):
+        print ("Turn Rght dazo~")
+    elif (data.ddeg<-data.range):
+        print ("Turn Left dazo~")
+    else :
+        print ("Go Straight dazo~\n")
+
+    data.save_data()
 
 
 if __name__ == "__main__":
@@ -417,70 +484,14 @@ if __name__ == "__main__":
     sensor.setMagRegister('100Hz','16bit')
     # sensor.selfTestMag()
     mag_correction1 = 8.1 #磁北を真北に補正する奴仙台では8.1　能代では8.9 
-    mag_correction2 = 45  #センサーの前方向とペンギンの前方向を一致させる補正係数
+    mag_correction2 = 45  #センサーの前方向とペンギンの前方向を一致させる補正
 
-    #グローバル変数とか
-    global orientation_deg
-    global current_deg
-    global ddeg
-    range = 30#目標角への許容誤差(プラスマイナスrange度)
-
-    #ログ
-    f=open('PENGUIN_log.txt','a')
-    f.write("\n===============New Log From Here dazo!===============\n")
+    #データ用class
+    data = Data()
 
 
     while True:
-        now     = time.time()
-        acc     = sensor.getAccel()
-        gyr     = sensor.getGyro()
-        mag     = sensor.getMag()
-#        deg     = math.acos(mag[1]/math.sqrt(mag[0]**2+mag[1]**2))
-        if(mag[1]<0):
-            current_deg     = math.degrees(math.acos(mag[0]/math.sqrt(mag[0]**2+mag[1]**2))) - mag_correction1 - mag_correction2
-        else:
-            current_deg     = -math.degrees(math.acos(mag[0]/math.sqrt(mag[0]**2+mag[1]**2))) - mag_correction1 - mag_correction2
 
-        if (current_deg>180):
-            current_deg = current_deg -360
-        elif(current_deg<-180):
-            current_deg = current_deg + 360
+        get_data()
 
-        getgps()#GPSデータ取得
-
-        ddeg=orientation_deg-current_deg#現在向いている方向とLNSへの方向の差
-        
-        #角度の差をプラスマイナス180度表示
-        if (ddeg>180):
-            ddeg = ddeg -360
-        elif(ddeg<-180):
-            ddeg = ddeg + 360
-
-#        print "%+8.7f" % acc[0] + " ",
-#        print "%+8.7f" % acc[1] + " ",
-#        print "%+8.7f" % acc[2] + " ",
-#        print " |   ",
-        print "%+8.7f" % gyr[0] + " ",
-        print "%+8.7f" % gyr[1] + " ",
-        print "%+8.7f" % gyr[2] + "\n ",
-#        print " |   ",
-
-#        print "%+8.7f" % mag[0] + " ",
-#        print "%+8.7f" % mag[1] + " ",
-#        print "%+8.7f" % mag[2] + " ",
-        print ("current_deg:%f"%current_deg)
-        print ("ddeg:%f"%ddeg)
-        if (ddeg>range):
-            print ("Turn Rght dazo~")
-        elif (ddeg<-range):
-            print ("Turn Left dazo~")
-        else :
-            print ("Go Straight dazo~")
-        f.write(str(acc[0]) + "," + str(acc[1]) + "," + str(acc[2]) + str(gyr[0]) + "," + str(gyr[1]) + "," + str(gyr[2]) + str(mag[0]) + "," + str(mag[1]) + "," + str(mag[2]))
-        f.write(str(Penguin1_pos)+","+str(orientation_deg)+","+str(current_deg)+","+str(ddeg)+"\n")
-        sleepTime       = 0.1 - (time.time() - now)
-        if sleepTime < 0.0:
-            continue
-        time.sleep(sleepTime)
         time.sleep(0.1)
-
