@@ -1,6 +1,8 @@
 #!/usr/bin/python -u
 # -*- coding: utf-8 -*-
 
+from __future__ import division
+
 import RPi.GPIO as GPIO
 import smbus
 import time
@@ -9,13 +11,128 @@ import serial
 import micropyGPS
 import threading #gpsデータ取得用
 import pyproj    #gps座標変換のパッケージ
-
+import Adafruit_PCA9685
 gps = micropyGPS.MicropyGPS(9,'dd') #gps
-
+pwm = Adafruit_PCA9685.PCA9685()
 #Heating_wire_pin = #電熱線で使うピン指定
 
 GPIO.setmode(GPIO.BCM)
 #GPIO.setup(Heating_wire_pin,GPIO.OUT)
+
+def set_servo_pulse(channel, pulse):
+    pulse_length = 1000000    # 1,000,000 us per second
+    pulse_length //= 50       # 50 Hz
+    #print('{0}us per period'.format(pulse_length))
+    pulse_length //= 4096     # 12 bits of resolution
+    #print('{0}us per bit'.format(pulse_length))
+    #pulse *= 1000
+    pulse //= pulse_length
+    pwm.set_pwm(channel, 0, pulse)
+# Set frequency to 60hz, good for servos.
+pwm.set_pwm_freq(50)
+
+def angle_pulse(x):
+   x = 170 * x / 18 + 500.0
+   x=int(x)
+   return x
+
+def angle_conv():
+    for k in range(12):
+                pulse_servo[k]=angle_pulse(servo_angle[k])
+    return pulse_servo
+
+def kaikyaku():
+    global servo_angle,pulse_servo
+    servo_angle=[10,10,10,0,80,90,80,95,120,120,140,140]
+    pulse_servo=[0,0,0,0,0,0,0,0,0,0,0,0]
+    servo_angle[0] = 90
+    servo_angle[1] = 90
+    angle_conv()
+    for i in range(12):
+        set_servo_pulse(i,pulse_servo[i])
+        time.sleep(0.1)
+        print servo_angle
+#    for i in range(16):
+#        pwm.set_pwm(i, 0, 0)
+
+def leg_move(servo_num,ang_ser):
+    servo_angle[servo_num-4] -= 45
+    angle_conv()
+    #print(servo_angle[servo_num-4])
+    set_servo_pulse(servo_num-4,pulse_servo[servo_num-4])
+    time.sleep(0.1)
+    servo_angle[servo_num] += ang_ser
+    angle_conv()
+    #print(servo_angle[servo_num])
+    set_servo_pulse(servo_num,pulse_servo[servo_num])
+    time.sleep(0.1)
+    servo_angle[servo_num-4] += 45
+    angle_conv()
+    #print(servo_angle[servo_num-4])
+    set_servo_pulse(servo_num-4,pulse_servo[servo_num-4])
+    time.sleep(2)
+
+def body_move(servo_num,ang_ser):
+    servo_angle[servo_num] += ang_ser
+    angle_conv()
+    #print(servo_angle[servo_num])
+    set_servo_pulse(servo_num,pulse_servo[servo_num])
+    #time.sleep(0.1)
+
+def walk():
+    global servo_angle,pulse_servo
+    servo_angle=[0,0,0,0,80,90,80,95,120,120,120,120]
+    pulse_servo=[0,0,0,0,0,0,0,0,0,0,0,0]
+    angle_conv()
+    for i in range(12):
+        set_servo_pulse(i,pulse_servo[i])
+        time.sleep(0.1)
+    move_dist = 13   #
+    move_angle = math.asin((move_dist/63)+(1/math.sqrt(2.0)))/math.pi*180-45
+    print(move_angle)
+    leg_move(8,-move_angle)
+    leg_move(9,move_angle)
+    for k in range(5):
+        leg_move(8,2*move_angle)
+        #print(servo_angle)
+        body_move(8,-move_angle)
+        body_move(11,move_angle)
+        body_move(9,-move_angle)
+        body_move(10,move_angle)
+        time.sleep(0.2)
+        print(servo_angle)
+        leg_move(10,-2*move_angle)
+        leg_move(11,-2*move_angle)
+        body_move(8,-move_angle)
+        body_move(11,move_angle)
+        body_move(9,-move_angle)
+        body_move(10,move_angle)
+        time.sleep(0.2)
+        leg_move(9,2*move_angle)
+        print(servo_angle)
+
+def turn(ang_turn):
+    servo_angle=[5,10,10,10,110,100,100,100,90,90,90,90]
+    pulse_servo=[0,0,0,0,0,0,0,0,0,0,0,0]
+    ang_turn = ang_turn / 4.0
+    for k in range(4):
+        print(ang_turn)
+        leg_move(9,ang_turn)
+        leg_move(10,ang_turn)
+        leg_move(11,ang_turn)
+        leg_move(8,ang_turn)
+        body_move(8,-ang_turn)
+        body_move(9,-ang_turn)
+        body_move(10,-ang_turn)
+        body_move(11,-ang_turn)
+
+def turn_left():
+    ang_turn = -10
+    turn(ang_turn)
+
+def turn_right():
+    ang_turn = 10
+    turn(ang_turn)
 
 class SL_MPU9250:
     # 定数宣言
@@ -478,10 +595,13 @@ def get_data():
 def orientation():
     if (data.ddeg>data.range):
         print ("Turn Rght dazo~")
+        turn_right()
     elif (data.ddeg<-data.range):
         print ("Turn Left dazo~")
+        turn_left()
     else :
         print ("Go Straight dazo~\n")
+        walk()
 
     #LNSに5mまで近づいた時
     if (data.distance<5):
@@ -491,6 +611,8 @@ def orientation():
 def turn_over_check():
     if (data.acc[2]<0.4): #Z軸の加速度で評価
         print ("korondazo~~~~~")
+
+
 
 if __name__ == "__main__":
     #MPU9250
@@ -507,6 +629,7 @@ if __name__ == "__main__":
     #データ用class
     data = Data()
 
+    kaikyaku()
 
     while True:
 
@@ -516,3 +639,4 @@ if __name__ == "__main__":
         orientation()
 
         time.sleep(0.1)
+v

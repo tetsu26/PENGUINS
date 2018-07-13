@@ -27,7 +27,7 @@ def angle_pulse(x):
    return x
 
 global servo_angle,pulse_servo 
-servo_angle=[10,10,10,0,80,90,80,95,120,120,120,120] 
+servo_angle=[0,0,0,0,80,90,80,95,120,120,120,120] 
 pulse_servo=[0,0,0,0,0,0,0,0,0,0,0,0]
 
 def angle_conv():
