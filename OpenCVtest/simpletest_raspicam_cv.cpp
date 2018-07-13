@@ -8,7 +8,7 @@ int main ( int argc,char **argv ) {
     time_t timer_begin,timer_end;
     raspicam::RaspiCam_Cv Camera;
     cv::Mat image;
-    int nCount=100;
+    int nCount=10;
     //set camera params
     Camera.set( CV_CAP_PROP_FORMAT, CV_8UC1 );
     //Open camera
