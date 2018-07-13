@@ -1,28 +1,21 @@
 #!/usr/bin/python -u
 # -*- coding: utf-8 -*-
 
+import RPi.GPIO as GPIO
 import smbus
 import time
 import math
-
 import serial
 import micropyGPS
-import threading
-import pyproj
+import threading #gpsデータ取得用
+import pyproj    #gps座標変換のパッケージ
 
-#座標たち
-LNS=[38.267834, 140.849264]#ローソン南極支店の座標(天野邸)
-LNS_xy=[38.28005833,140.85160667]#ローソン南極支店のxy座標
-Penguin1_pos=[0.0,0.0]#ペンギン1号の座標
-Penguin1_pos_xy=[0.0,0.0]#ペンギン1号のxy座標
+gps = micropyGPS.MicropyGPS(9,'dd') #gps
 
-#グローバル変数たち
-orientation_deg  = 0.0
-current_deg      = 0.0
-ddeg             = 0.0
+#Heating_wire_pin = #電熱線で使うピン指定
 
-gps = micropyGPS.MicropyGPS(9,'dd')
-
+GPIO.setmode(GPIO.BCM)
+#GPIO.setup(Heating_wire_pin,GPIO.OUT)
 
 class SL_MPU9250:
     # 定数宣言
@@ -374,38 +367,130 @@ def getgps():
     #print('海抜: %f' % gps.altitude)
 
     #座標変換
-    Penguin1_pos  = [round(gps.latitude[0],9),round(gps.longitude[0],9)]#小数点8桁以上だとエラー出るので7桁まで
+    data.Penguin1_pos  = [round(gps.latitude[0],9),round(gps.longitude[0],9)]#小数点8桁以上だとエラー出るので7桁まで
 
     EPSG4612 = pyproj.Proj("+init=EPSG:4612")
     EPSG2452 = pyproj.Proj("+init=EPSG:2452")#東北地方中心平面直角座標系10経
 
 
-    if(Penguin1_pos[1] != 0.0):
-        LNS_xy[1],LNS_xy[0] = pyproj.transform(EPSG4612, EPSG2452, LNS[1], LNS[0] )#x,yが逆なので注意（ここで2時間溶かした）
-        Penguin1_pos_xy[1],Penguin1_pos_xy[0] = pyproj.transform(EPSG4612, EPSG2452, Penguin1_pos[1], Penguin1_pos[0] )
+    if(data.Penguin1_pos[1] != 0.0):
+        data.LNS_xy[1],data.LNS_xy[0] = pyproj.transform(EPSG4612, EPSG2452, data.LNS[1], data.LNS[0] )#x,yが逆なので注意（ここで2時間溶かした）
+        data.Penguin1_pos_xy[1],data.Penguin1_pos_xy[0] = pyproj.transform(EPSG4612, EPSG2452, data.Penguin1_pos[1], data.Penguin1_pos[0] )
     else:
         print ("We are at Gulf of Guinea")
 
-    dx=LNS_xy[0]-Penguin1_pos_xy[0]#LNSまでのx座標の差
-    dy=LNS_xy[1]-Penguin1_pos_xy[1]#LNSまでのy座標の差
-    distance=math.sqrt(dx**2+dy**2)#LNSまでの距離
-    global orientation_deg
+    dx=data.LNS_xy[0]-data.Penguin1_pos_xy[0]#LNSまでのx座標の差
+    dy=data.LNS_xy[1]-data.Penguin1_pos_xy[1]#LNSまでのy座標の差
+    data.distance=math.sqrt(dx**2+dy**2)#LNSまでの距離
+#    global orientation_deg
     #LNSへの角度
     if(dy>0):
-        orientation_deg=math.degrees(math.acos(dx/distance))
+        data.orientation_deg=math.degrees(math.acos(dx/data.distance))
     else:
-        orientation_deg=-math.degrees(math.acos(dx/distance))
+        data.orientation_deg=-math.degrees(math.acos(dx/data.distance))
 
     #print Penguin1_pos_xy
     #print LNS_xy
-    print ("distance:%f"%distance)
-    print ("orientation_deg:%f"%orientation_deg)
+    print ("distance:%f"%data.distance)
+    print ("orientation_deg:%f"%data.orientation_deg)
     #print('')
 ###################################################################################
 
+class Data:
+
+    #変数宣言    
+    now               =  0.0              #たぶん時間
+    acc               =  [0.0,0.0,0.0]    #加速度
+    gyr               =  [0.0,0.0,0.0]    #ジャイロ
+    mag               =  [0.0,0.0,0.0]    #磁気
+
+    current_deg       =  0.0              #現在機体が向いてい方向(以後角度は東が0度でプラスマイナス180度)
+    distance          =  0.0              #機体からLNSまでの距離
+    orientation_deg   =  0.0              #機体からLNSへの角度
+    current_deg       =  0.0              #機体が向いている角度
+    ddeg              =  0.0              #LNSへの角度と機体が向いている角度の差
+    range             =  30               #目標角への許容誤差(プラスマイナスrange度)
+   
+    #座標
+    LNS=[38.267834, 140.849264]           #ローソン南極支店の座標(天野邸)
+    LNS_xy=[38.28005833,140.85160667]     #ローソン南極支店のxy座標
+    Penguin1_pos=[0.0,0.0]                #ペンギン1号の座標
+    Penguin1_pos_xy=[0.0,0.0]             #ペンギン1号のxy座標
+
+    #コンストラクタ
+    def __init__(self):
+    #ログ
+        self.f=open('PENGUIN_log.txt','a')
+        self.f.write("\n===============New Log From Here dazo!===============\n")
 
 
+    def save_data(self):
+        self.f.write(str(self.acc[0])+","+str(self.acc[1])+","+str(self.acc[2])+","+ str(self.gyr[0])+"," + str(self.gyr[1]) + "," + str(self.gyr[2]) +","+ str(self.mag[0]) + "," + str(self.mag[1]) + "," + str(self.mag[2]))
+        self.f.write(str(self.Penguin1_pos[0])+","+str(self.Penguin1_pos[1])+","+str(self.orientation_deg)+","+str(self.current_deg)+","+str(self.ddeg)+"\n")
 
+def detouch_para():
+#    GPIO,output(Heating_wire_pinGPIO.HIGH)
+#    time.sleep(2.0)
+#    GPIO,output(Heating_wire_pinGPIO.LOW)    
+    print "para detouched dazo~"
+
+def get_data():
+    #各データ取得
+    data.now     = time.time()
+    data.acc     = sensor.getAccel()
+    data.gyr     = sensor.getGyro()
+    data.mag     = sensor.getMag()
+    getgps()       #gpsデータ取得関数
+
+    #機体の向いている方向を磁気センサーの値から算出
+    if(data.mag[1]<0):
+        data.current_deg     = math.degrees(math.acos(data.mag[0]/math.sqrt(data.mag[0]**2+data.mag[1]**2))) - mag_correction1 - mag_correction2
+    else:
+        data.current_deg     = -math.degrees(math.acos(data.mag[0]/math.sqrt(data.mag[0]**2+data.mag[1]**2))) - mag_correction1 - mag_correction2
+
+    #機体の向いている角度をプラスマイナス180に変換
+    if (data.current_deg>180):
+        data.current_deg = data.current_deg -360
+    elif(data.current_deg<-180):
+        data.current_deg = data.current_deg + 360
+
+    data.ddeg=data.orientation_deg-data.current_deg #現在向いている方向とLNSへの方向の差を計算
+
+    #角度の差をプラスマイナス180度に変換
+    if (data.ddeg>180):
+        data.ddeg = data.ddeg -360
+    elif(data.ddeg<-180):
+       data.ddeg = data.ddeg + 360
+
+    #各データを表示
+    print "%+8.7f" % data.acc[0] + " " + "%+8.7f" % data.acc[1] + " " + "%+8.7f" % data.acc[2]
+#   print " |   ",
+    print "%+8.7f" % data.gyr[0] + " " + "%+8.7f" % data.gyr[1] + " " + "%+8.7f" % data.gyr[2]
+#   print " |   ",
+    print "%+8.7f" % data.mag[0] + " " + "%+8.7f" % data.mag[1] + " " + "%+8.7f" % data.mag[2]
+
+    print ("current_deg:%f"%data.current_deg)
+    print ("ddeg:%f"%data.ddeg)
+
+    data.save_data() #取得したデータを保存
+
+#進む方向を決定
+def orientation():
+    if (data.ddeg>data.range):
+        print ("Turn Rght dazo~")
+    elif (data.ddeg<-data.range):
+        print ("Turn Left dazo~")
+    else :
+        print ("Go Straight dazo~\n")
+
+    #LNSに5mまで近づいた時
+    if (data.distance<5):
+        print ("LNS is close dane~~~")
+
+#ひっくり返ってないかチェック
+def turn_over_check():
+    if (data.acc[2]<0.4): #Z軸の加速度で評価
+        print ("korondazo~~~~~")
 
 if __name__ == "__main__":
     #MPU9250
@@ -417,70 +502,17 @@ if __name__ == "__main__":
     sensor.setMagRegister('100Hz','16bit')
     # sensor.selfTestMag()
     mag_correction1 = 8.1 #磁北を真北に補正する奴仙台では8.1　能代では8.9 
-    mag_correction2 = 45  #センサーの前方向とペンギンの前方向を一致させる補正係数
+    mag_correction2 = 45  #センサーの前方向とペンギンの前方向を一致させる補正
 
-    #グローバル変数とか
-    global orientation_deg
-    global current_deg
-    global ddeg
-    range = 30#目標角への許容誤差(プラスマイナスrange度)
-
-    #ログ
-    f=open('PENGUIN_log.txt','a')
-    f.write("\n===============New Log From Here dazo!===============\n")
+    #データ用class
+    data = Data()
 
 
     while True:
-        now     = time.time()
-        acc     = sensor.getAccel()
-        gyr     = sensor.getGyro()
-        mag     = sensor.getMag()
-#        deg     = math.acos(mag[1]/math.sqrt(mag[0]**2+mag[1]**2))
-        if(mag[1]<0):
-            current_deg     = math.degrees(math.acos(mag[0]/math.sqrt(mag[0]**2+mag[1]**2))) - mag_correction1 - mag_correction2
-        else:
-            current_deg     = -math.degrees(math.acos(mag[0]/math.sqrt(mag[0]**2+mag[1]**2))) - mag_correction1 - mag_correction2
 
-        if (current_deg>180):
-            current_deg = current_deg -360
-        elif(current_deg<-180):
-            current_deg = current_deg + 360
+        #detouch_para()
+        get_data()
+        turn_over_check()
+        orientation()
 
-        getgps()#GPSデータ取得
-
-        ddeg=orientation_deg-current_deg#現在向いている方向とLNSへの方向の差
-        
-        #角度の差をプラスマイナス180度表示
-        if (ddeg>180):
-            ddeg = ddeg -360
-        elif(ddeg<-180):
-            ddeg = ddeg + 360
-
-#        print "%+8.7f" % acc[0] + " ",
-#        print "%+8.7f" % acc[1] + " ",
-#        print "%+8.7f" % acc[2] + " ",
-#        print " |   ",
-        print "%+8.7f" % gyr[0] + " ",
-        print "%+8.7f" % gyr[1] + " ",
-        print "%+8.7f" % gyr[2] + "\n ",
-#        print " |   ",
-
-#        print "%+8.7f" % mag[0] + " ",
-#        print "%+8.7f" % mag[1] + " ",
-#        print "%+8.7f" % mag[2] + " ",
-        print ("current_deg:%f"%current_deg)
-        print ("ddeg:%f"%ddeg)
-        if (ddeg>range):
-            print ("Turn Rght dazo~")
-        elif (ddeg<-range):
-            print ("Turn Left dazo~")
-        else :
-            print ("Go Straight dazo~")
-        f.write(str(acc[0]) + "," + str(acc[1]) + "," + str(acc[2]) + str(gyr[0]) + "," + str(gyr[1]) + "," + str(gyr[2]) + str(mag[0]) + "," + str(mag[1]) + "," + str(mag[2]))
-        f.write(str(Penguin1_pos)+","+str(orientation_deg)+","+str(current_deg)+","+str(ddeg)+"\n")
-        sleepTime       = 0.1 - (time.time() - now)
-        if sleepTime < 0.0:
-            continue
-        time.sleep(sleepTime)
         time.sleep(0.1)
-
