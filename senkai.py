@@ -64,24 +64,24 @@ def angle_conv():
 def leg_move(servo_num,ang_ser):
 	servo_angle[servo_num-4] -= 20
 	angle_conv() 
-	print(servo_angle[servo_num-4])
+	#print(servo_angle[servo_num-4])
 	set_servo_pulse(servo_num-4,pulse_servo[servo_num-4])
 	time.sleep(0.1)
 	servo_angle[servo_num] += ang_ser
         angle_conv()
-        print(servo_angle[servo_num])
+        #print(servo_angle[servo_num])
         set_servo_pulse(servo_num,pulse_servo[servo_num])
 	time.sleep(0.1)
 	servo_angle[servo_num-4] += 20
         angle_conv()
-        print(servo_angle[servo_num-4])
+        #print(servo_angle[servo_num-4])
         set_servo_pulse(servo_num-4,pulse_servo[servo_num-4])
         time.sleep(0.1)
 
 def body_move(servo_num,ang_ser):
 	servo_angle[servo_num] += ang_ser
         angle_conv()
-        print(servo_angle[servo_num])
+        #print(servo_angle[servo_num])
         set_servo_pulse(servo_num,pulse_servo[servo_num])
         #time.sleep(0.05)
 
@@ -93,6 +93,7 @@ for i in range(12):
 def turn(ang_turn):
 	ang_turn = ang_turn / 4.0
 	for k in range(4):
+		print(ang_turn)
 		leg_move(9,ang_turn)
 		leg_move(10,ang_turn)
 		leg_move(11,ang_turn)
@@ -100,8 +101,9 @@ def turn(ang_turn):
 		body_move(8,-ang_turn)
 		body_move(9,-ang_turn)
 		body_move(10,-ang_turn)
-		body_move(11.-ang_turn)
+		body_move(11,-ang_turn)
 
+time.sleep(5)
 ang_turn = input()
 turn(ang_turn)
 for i in range(16):

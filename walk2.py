@@ -1,6 +1,6 @@
 from __future__ import division
 import time
-
+import math
 import RPi.GPIO as GPIO
 
 # Import the PCA9685 module.
@@ -21,39 +21,13 @@ def set_servo_pulse(channel, pulse):
 # Set frequency to 60hz, good for servos.
 pwm.set_pwm_freq(50)
 
-print('chose the moter and angle')
-#x=input()
-#angle=input()
-
 def angle_pulse(x):
    x = 170 * x / 18 + 500.0
    x=int(x)
    return x
 
-"""ang1=  180
-ang2 = 10
-ang3 = 120
-angle3_pulse = angle_pulse(ang3)
-time.sleep(0.1)
-
-for l in range(4):
-	set_servo_pulse(l+8,angle3_pulse)
-for i in range(10):
-	ang1_pulse = angle_pulse(ang1)
-	ang2_pulse = angle_pulse(ang2)
-	for k in range(4):
-		set_servo_pulse(k,ang1_pulse)
-		time.sleep(0.1)
-	for j in range(4):
-		print(ang2)
-		set_servo_pulse(j+4,ang2_pulse)
-		time.sleep(0.1)
-	ang1-=18
-	ang2+=9
-"""
-
 global servo_angle,pulse_servo 
-servo_angle=[10,10,10,0,80,90,80,95,120,120,140,140] 
+servo_angle=[10,10,10,0,80,90,80,95,120,120,120,120] 
 pulse_servo=[0,0,0,0,0,0,0,0,0,0,0,0]
 
 def angle_conv():
@@ -89,25 +63,28 @@ angle_conv()
 for i in range(12):
 	set_servo_pulse(i,pulse_servo[i])
 	time.sleep(0.1)
-leg_move(8,-30)
-leg_move(9,30)
+move_dist = input()
+move_angle = math.asin((move_dist/63)+(1/math.sqrt(2.0)))/math.pi*180-45	
+print(move_angle)
+leg_move(8,-move_angle)
+leg_move(9,move_angle)
 for k in range(5):
-	leg_move(8,60)
+	leg_move(8,2*move_angle)
 	#print(servo_angle)
-	body_move(8,-30)
-	body_move(11,30)
-	body_move(9,-30)
-	body_move(10,30)
+	body_move(8,-move_angle)
+	body_move(11,move_angle)
+	body_move(9,-move_angle)
+	body_move(10,move_angle)
 	time.sleep(0.2)
 	print(servo_angle)
-	leg_move(10,-60)
-	leg_move(11,-60)
-	body_move(8,-30)
-	body_move(11,30)
-	body_move(9,-30)
-	body_move(10,30)
+	leg_move(10,-2*move_angle)
+	leg_move(11,-2*move_angle)
+	body_move(8,-move_angle)
+	body_move(11,move_angle)
+	body_move(9,-move_angle)
+	body_move(10,move_angle)
 	time.sleep(0.2)
-	leg_move(9,60)
+	leg_move(9,2*move_angle)
 	print(servo_angle)
 	
 for i in range(16):
