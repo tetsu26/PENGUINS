@@ -43,7 +43,7 @@ def angle_conv():
 
 def kaikyaku():
     global servo_angle,pulse_servo
-    servo_angle=[10,10,10,0,80,90,80,95,120,120,140,140]
+    servo_angle=[10,10,10,10,90,90,90,90,120,120,140,140]
     pulse_servo=[0,0,0,0,0,0,0,0,0,0,0,0]
     servo_angle[0] = 90
     servo_angle[1] = 90
@@ -52,6 +52,11 @@ def kaikyaku():
         set_servo_pulse(i,pulse_servo[i])
         time.sleep(0.1)
         print servo_angle
+    servo_angle=[0,0,0,0,90,90,90,90,120,120,120,120]
+    angle_conv()
+    for i in range(12):
+        set_servo_pulse(i,pulse_servo[i])
+        time.sleep(0.1)
 #    for i in range(16):
 #        pwm.set_pwm(i, 0, 0)
 
@@ -70,7 +75,7 @@ def leg_move(servo_num,ang_ser):
     angle_conv()
     #print(servo_angle[servo_num-4])
     set_servo_pulse(servo_num-4,pulse_servo[servo_num-4])
-    time.sleep(2)
+    time.sleep(0.5)
 
 def body_move(servo_num,ang_ser):
     servo_angle[servo_num] += ang_ser
@@ -80,9 +85,6 @@ def body_move(servo_num,ang_ser):
     #time.sleep(0.1)
 
 def walk():
-    global servo_angle,pulse_servo
-    servo_angle=[0,0,0,0,80,90,80,95,120,120,120,120]
-    pulse_servo=[0,0,0,0,0,0,0,0,0,0,0,0]
     angle_conv()
     for i in range(12):
         set_servo_pulse(i,pulse_servo[i])
@@ -99,7 +101,7 @@ def walk():
         body_move(11,move_angle)
         body_move(9,-move_angle)
         body_move(10,move_angle)
-        time.sleep(0.2)
+        time.sleep(0.1)
         print(servo_angle)
         leg_move(10,-2*move_angle)
         leg_move(11,-2*move_angle)
@@ -107,13 +109,11 @@ def walk():
         body_move(11,move_angle)
         body_move(9,-move_angle)
         body_move(10,move_angle)
-        time.sleep(0.2)
+        time.sleep(0.1)
         leg_move(9,2*move_angle)
         print(servo_angle)
 
 def turn(ang_turn):
-    servo_angle=[5,10,10,10,110,100,100,100,90,90,90,90]
-    pulse_servo=[0,0,0,0,0,0,0,0,0,0,0,0]
     ang_turn = ang_turn / 4.0
     for k in range(4):
         print(ang_turn)
@@ -127,11 +127,11 @@ def turn(ang_turn):
         body_move(11,-ang_turn)
 
 def turn_left():
-    ang_turn = -10
+    ang_turn = 20
     turn(ang_turn)
 
 def turn_right():
-    ang_turn = 10
+    ang_turn = -20
     turn(ang_turn)
 
 class SL_MPU9250:
@@ -639,4 +639,4 @@ if __name__ == "__main__":
         orientation()
 
         time.sleep(0.1)
-v
+
