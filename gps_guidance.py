@@ -75,7 +75,7 @@ def leg_move(servo_num,ang_ser):
     angle_conv()
     #print(servo_angle[servo_num-4])
     set_servo_pulse(servo_num-4,pulse_servo[servo_num-4])
-    time.sleep(0.5)
+    time.sleep(0.2)
 
 def body_move(servo_num,ang_ser):
     servo_angle[servo_num] += ang_ser
