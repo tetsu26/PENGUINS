@@ -14,10 +14,13 @@ import pyproj    #gps座標変換のパッケージ
 import Adafruit_PCA9685
 gps = micropyGPS.MicropyGPS(9,'dd') #gps
 pwm = Adafruit_PCA9685.PCA9685()
-#Heating_wire_pin = #電熱線で使うピン指定
+Heating_wire_pin = 17 #電熱線で使うピン指定
+
+init_servo_angle=[10,10,10,10,90,90,90,90,120,120,120,120]
+init_pulse_servo=[0,0,0,0,0,0,0,0,0,0,0,0]
 
 GPIO.setmode(GPIO.BCM)
-#GPIO.setup(Heating_wire_pin,GPIO.OUT)
+GPIO.setup(Heating_wire_pin,GPIO.OUT)
 
 def set_servo_pulse(channel, pulse):
     pulse_length = 1000000    # 1,000,000 us per second
@@ -43,8 +46,8 @@ def angle_conv():
 
 def kaikyaku():
     global servo_angle,pulse_servo
-    servo_angle=[10,10,10,10,90,90,90,90,120,120,140,140]
-    pulse_servo=[0,0,0,0,0,0,0,0,0,0,0,0]
+    servo_angle = init_servo_angle
+    pulse_servo = init_pulse_servo
     servo_angle[0] = 90
     servo_angle[1] = 90
     angle_conv()
@@ -52,7 +55,9 @@ def kaikyaku():
         set_servo_pulse(i,pulse_servo[i])
         time.sleep(0.1)
         print servo_angle
-    servo_angle=[0,0,0,0,90,90,90,90,120,120,120,120]
+    servo_angle = [10,10,10,10,90,90,90,90,120,120,120,120]
+    print servo_angle
+    time.sleep(3.0)
     angle_conv()
     for i in range(12):
         set_servo_pulse(i,pulse_servo[i])
@@ -85,6 +90,9 @@ def body_move(servo_num,ang_ser):
     #time.sleep(0.1)
 
 def walk():
+    global servo_angle,pulse_servo
+    servo_angle = [10,10,10,10,90,90,90,90,120,120,120,120]
+    pulse_servo = init_pulse_servo
     angle_conv()
     for i in range(12):
         set_servo_pulse(i,pulse_servo[i])
@@ -114,8 +122,10 @@ def walk():
         print(servo_angle)
 
 def turn(ang_turn):
-    ang_turn = ang_turn / 4.0
-    for k in range(4):
+    servo_angle = [10,10,10,10,90,90,90,90,120,120,120,120]
+    pulse_servo = init_pulse_servo
+    ang_turn = ang_turn / 2.0
+    for k in range(2):
         print(ang_turn)
         leg_move(9,ang_turn)
         leg_move(10,ang_turn)
@@ -127,11 +137,11 @@ def turn(ang_turn):
         body_move(11,-ang_turn)
 
 def turn_left():
-    ang_turn = 20
+    ang_turn = 45
     turn(ang_turn)
 
 def turn_right():
-    ang_turn = -20
+    ang_turn = -45
     turn(ang_turn)
 
 class SL_MPU9250:
@@ -534,6 +544,8 @@ class Data:
     Penguin1_pos=[0.0,0.0]                #ペンギン1号の座標
     Penguin1_pos_xy=[0.0,0.0]             #ペンギン1号のxy座標
 
+    gps_flag=0
+
     #コンストラクタ
     def __init__(self):
     #ログ
@@ -546,10 +558,12 @@ class Data:
         self.f.write(str(self.Penguin1_pos[0])+","+str(self.Penguin1_pos[1])+","+str(self.orientation_deg)+","+str(self.current_deg)+","+str(self.ddeg)+"\n")
 
 def detouch_para():
-#    GPIO,output(Heating_wire_pinGPIO.HIGH)
-#    time.sleep(2.0)
-#    GPIO,output(Heating_wire_pinGPIO.LOW)    
+    print "HEATING NOW!"
+    GPIO.output(Heating_wire_pin,1)
+    time.sleep(1.0)
+    GPIO.output(Heating_wire_pin,0)    
     print "para detouched dazo~"
+    time.sleep(1.0)
 
 def get_data():
     #各データ取得
@@ -606,6 +620,7 @@ def orientation():
     #LNSに5mまで近づいた時
     if (data.distance<5):
         print ("LNS is close dane~~~")
+        data.gps_flag=1
 
 #ひっくり返ってないかチェック
 def turn_over_check():
@@ -630,13 +645,11 @@ if __name__ == "__main__":
     data = Data()
 
     kaikyaku()
+#    detouch_para()
+    while data.gps_flag==0:
 
-    while True:
-
-        #detouch_para()
         get_data()
         turn_over_check()
         orientation()
-
         time.sleep(0.1)
 
