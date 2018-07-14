@@ -180,7 +180,7 @@ int main( int argc, char** argv )
     Size boardSize, imageSize;
     float squareSize, aspectRatio;
     string outputFilename;
-    string inputFilename = "";
+    string inputFilename = "campara.txt";
 
     vector<vector<Point2f> > imgpt[3];
     vector<string> imageList;
