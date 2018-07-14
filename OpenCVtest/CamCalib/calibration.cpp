@@ -62,7 +62,7 @@ static bool run3Calibration(vector<vector<Point2f> > imagePoints1,
     calcChessboardCorners(boardSize, squareSize, objpt[0]);
     vector<Mat> rvecs, tvecs;
 
-    for( c = 1; c <= 3; c++ )
+    for( c = 1; c <= 1; c++ )
     {
         const vector<vector<Point2f> >& imgpt0 = c == 1 ? imagePoints1 : c == 2 ? imagePoints2 : imagePoints3;
         imgpt.clear();
@@ -73,13 +73,13 @@ static bool run3Calibration(vector<vector<Point2f> > imagePoints1,
                 imgpt.push_back(imgpt0[i]);
                 N += (int)imgpt0[i].size();
             }
-
+/*
         if( imgpt.size() < 3 )
         {
             printf("Error: not enough views for camera %d\n", c);
             return false;
         }
-
+*/
         objpt.resize(imgpt.size(),objpt[0]);
 
         Mat cameraMatrix = Mat::eye(3, 3, CV_64F);
@@ -110,6 +110,7 @@ static bool run3Calibration(vector<vector<Point2f> > imagePoints1,
     vector<vector<Point2f> > imgpt_right;
 
     // step 2: calibrate (1,2) and (3,2) pairs
+    /*
     for( c = 2; c <= 3; c++ )
     {
         const vector<vector<Point2f> >& imgpt0 = c == 2 ? imagePoints2 : imagePoints3;
@@ -155,7 +156,9 @@ static bool run3Calibration(vector<vector<Point2f> > imagePoints1,
     }
 
     return true;
+    */
 }
+
 
 static bool readStringList( const string& filename, vector<string>& l )
 {
@@ -229,7 +232,7 @@ int main( int argc, char** argv )
 
     Mat view, viewGray;
     Mat cameraMatrix[3], distCoeffs[3], R[3], P[3], R12, T12;
-    for( k = 0; k < 3; k++ )
+    for( k = 0; k < 1; k++ )
     {
         cameraMatrix[k] = Mat_<double>::eye(3,3);
         cameraMatrix[k].at<double>(0,0) = aspectRatio;
@@ -241,12 +244,12 @@ int main( int argc, char** argv )
     FileStorage fs;
     namedWindow( "Image View", 0 );
 
-    for( k = 0; k < 3; k++ )
+    for( k = 0; k < 1; k++ )
         imgpt[k].resize(imageList.size()/3);
 
-    for( i = 0; i < (int)(imageList.size()/3); i++ )
+    for( i = 0; i < (int)(imageList.size()); i++ )
     {
-        for( k = 0; k < 3; k++ )
+        for( k = 0; k < 1; k++ )
         {
             int k1 = k == 0 ? 2 : k == 1 ? 0 : 1;
             printf("%s\n", imageList[i*3+k].c_str());
@@ -265,10 +268,10 @@ int main( int argc, char** argv )
                     imgpt[k1][i].resize(ptvec.size());
                     std::copy(ptvec.begin(), ptvec.end(), imgpt[k1][i].begin());
                 }
-                //imshow("view", view);
-                //int c = waitKey(0) & 255;
-                //if( c == 27 || c == 'q' || c == 'Q' )
-                //    return -1;
+                imshow("view", view);
+                int c = waitKey(0) & 255;
+                if( c == 27 || c == 'q' || c == 'Q' )
+                    return -1;
             }
         }
     }
@@ -291,7 +294,6 @@ int main( int argc, char** argv )
     fs << "distCoeffs1" << distCoeffs[0];
     fs << "distCoeffs2" << distCoeffs[1];
     fs << "distCoeffs3" << distCoeffs[2];
-
     fs << "R12" << R12;
     fs << "T12" << T12;
     fs << "R13" << R13;
