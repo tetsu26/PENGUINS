@@ -2,11 +2,11 @@
  * 3calibration.cpp -- Calibrate 3 cameras in a horizontal line together.
  */
 
-#include <opencv2/calib3d.hpp>
-#include <opencv2/imgproc.hpp>
-#include <opencv2/imgcodecs.hpp>
-#include <opencv2/highgui.hpp>
-#include <opencv2/core/utility.hpp>
+#include "opencv2/calib3d.hpp"
+#include "opencv2/imgproc.hpp"
+#include "opencv2/imgcodecs.hpp"
+#include "opencv2/highgui.hpp"
+#include "opencv2/core/utility.hpp"
 
 #include <stdio.h>
 #include <string.h>
@@ -180,7 +180,7 @@ int main( int argc, char** argv )
     Size boardSize, imageSize;
     float squareSize, aspectRatio;
     string outputFilename;
-    string inputFilename = "campara.txt";
+    string inputFilename = "";
 
     vector<vector<Point2f> > imgpt[3];
     vector<string> imageList;
