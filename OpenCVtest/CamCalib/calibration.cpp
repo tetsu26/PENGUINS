@@ -329,6 +329,7 @@ int main(int argc, char* argv[])
         case Settings::CHESSBOARD:
 	    printf("ababa\n");
             found = findChessboardCorners( view, s.boardSize, pointBuf, chessBoardFlags);
+            printf("%d\n",found);
             break;
         case Settings::CIRCLES_GRID:
             found = findCirclesGrid( view, s.boardSize, pointBuf );
