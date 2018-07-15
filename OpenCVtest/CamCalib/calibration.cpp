@@ -327,6 +327,7 @@ int main(int argc, char* argv[])
         switch( s.calibrationPattern ) // Find feature points on the input format
         {
         case Settings::CHESSBOARD:
+	    printf("ababa\n");
             found = findChessboardCorners( view, s.boardSize, pointBuf, chessBoardFlags);
             break;
         case Settings::CIRCLES_GRID:
@@ -346,7 +347,6 @@ int main(int argc, char* argv[])
               // improve the found corners' coordinate accuracy for chessboard
                 if( s.calibrationPattern == Settings::CHESSBOARD)
                 {
-                    printf("ababababab\n");
                     Mat viewGray;
                     cvtColor(view, viewGray, COLOR_BGR2GRAY);
                     cornerSubPix( viewGray, pointBuf, Size(11,11),
