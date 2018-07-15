@@ -346,6 +346,7 @@ int main(int argc, char* argv[])
               // improve the found corners' coordinate accuracy for chessboard
                 if( s.calibrationPattern == Settings::CHESSBOARD)
                 {
+                    printf("ababababab\n");
                     Mat viewGray;
                     cvtColor(view, viewGray, COLOR_BGR2GRAY);
                     cornerSubPix( viewGray, pointBuf, Size(11,11),
