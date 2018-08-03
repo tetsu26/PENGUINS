@@ -23,7 +23,6 @@ int main(int argc, const char* argv[])
     {
  	image_name[1] = '\0';
 	marker_id = i;
-	Ptr<aruco::CameraParameters> CamParam;
 	aruco::drawMarker(dictionary, marker_id, side_pixels, marker_image);
         image_name[0] = char(48 + i);
 	//cout << image_name << '\n';

@@ -48,8 +48,9 @@ int main(int argc, const char* argv[])
 	*/
 	vector<int> markerIds;
 	vector<std::vector<cv::Point2f>> markerCorners, rejectedCandidates;
-	aruco::detectMarkers(InImage, dictionary, markerCorners, markerIds);
-	
+	Ptr<cv::aruco::DetectorParameters> parameters = cv::aruco::DetectorParameters::create();
+	aruco::detectMarkers(InImage, dictionary, markerCorners, markerIds,parameters,rejectedCandidates);
+	cvtColor(InImage, OutImage,COLOR_GRAY2RGB);
 	aruco::drawDetectedMarkers(OutImage, markerCorners, markerIds);
 	printf("%d\n",markerIds.size());
 	imshow("out", OutImage);
