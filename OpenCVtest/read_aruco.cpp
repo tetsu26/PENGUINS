@@ -68,6 +68,7 @@ int main(int argc, const char* argv[])
 	for (int ii = 0; ii < markerIds.size(); ii++){
 		aruco::drawAxis(OutImage, cameraMatrix, distCoeffs, rvecs[ii], tvecs[ii], 0.1);
 	}
+	aruco::drawDetectedMarkers(OutImage,markerCorners, markerIds);
 
 	imwrite("out.jpg",OutImage);
 	imshow("out", OutImage);
