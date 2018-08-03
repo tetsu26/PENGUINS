@@ -12,6 +12,7 @@ int main(int argc, const char* argv[])
     // dictionary生成
     const aruco::PREDEFINED_DICTIONARY_NAME dictionary_name = aruco::DICT_4X4_50;
     Ptr<aruco::Dictionary> dictionary = aruco::getPredefinedDictionary(dictionary_name);
+    
 
     // マーカー画像生成
     int marker_id   = 0;
@@ -22,6 +23,7 @@ int main(int argc, const char* argv[])
     {
  	image_name[1] = '\0';
 	marker_id = i;
+	Ptr<aruco::CameraParameters> CamParam;
 	aruco::drawMarker(dictionary, marker_id, side_pixels, marker_image);
         image_name[0] = char(48 + i);
 	//cout << image_name << '\n';

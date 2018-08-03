@@ -327,7 +327,6 @@ int main(int argc, char* argv[])
         switch( s.calibrationPattern ) // Find feature points on the input format
         {
         case Settings::CHESSBOARD:
-	    printf("ababa\n");
             found = findChessboardCorners( view, s.boardSize, pointBuf, chessBoardFlags);
             printf("%d\n",found);
             break;
@@ -400,6 +399,8 @@ int main(int argc, char* argv[])
         //! [output_undistorted]
         //------------------------------ Show image and check for input commands -------------------
         //! [await_input]
+        cout << "camera matrix: " << cameraMatrix<< endl
+        << "distortion coeffs: " << distCoeffs<< endl;
         imshow("Image View", view);
         char key = (char)waitKey(s.inputCapture.isOpened() ? 50 : s.delay);
 
