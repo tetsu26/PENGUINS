@@ -12,6 +12,7 @@ int main(int argc, const char* argv[])
     // dictionary生成
     const aruco::PREDEFINED_DICTIONARY_NAME dictionary_name = aruco::DICT_4X4_50;
     Ptr<aruco::Dictionary> dictionary = aruco::getPredefinedDictionary(dictionary_name);
+    
 
     // マーカー画像生成
     int marker_id   = 0;
