@@ -60,10 +60,14 @@ int main(int argc, const char* argv[])
 	vector<Vec3d> rvecs, tvecs;
 	rvecs.clear();
 	tvecs.clear();
-	aruco::estimatePoseSingleMarkers(markerCorners, 0.05, cameraMatrix, distCoeffs, rvecs, tvecs);
-	printf("hoge\n");
+	aruco::estimatePoseSingleMarkers(markerCorners, 0.053, cameraMatrix, distCoeffs, rvecs, tvecs);
+	printf("rvecs:\n");
 	for(auto a: rvecs){
-		cout << a<< endl;
+		cout <<a<< endl;
+	}
+	printf("tvecs:\n");
+	for(auto a: tvecs){
+		cout <<a<< endl;
 	}
 	for (int ii = 0; ii < markerIds.size(); ii++){
 		aruco::drawAxis(OutImage, cameraMatrix, distCoeffs, rvecs[ii], tvecs[ii], 0.1);
