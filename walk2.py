@@ -27,7 +27,7 @@ def angle_pulse(x):
    return x
 
 global servo_angle,pulse_servo 
-servo_angle=[0,0,0,0,80,90,80,95,120,120,120,120] 
+servo_angle=[0,90,120,0,90,120,0,90,120,0,90,120] 
 pulse_servo=[0,0,0,0,0,0,0,0,0,0,0,0]
 
 def angle_conv():
@@ -36,21 +36,21 @@ def angle_conv():
         return pulse_servo
 
 def leg_move(servo_num,ang_ser):
-	servo_angle[servo_num-4] -= 45
+	servo_angle[servo_num-1] -= 45
 	angle_conv() 
 	#print(servo_angle[servo_num-4])
-	set_servo_pulse(servo_num-4,pulse_servo[servo_num-4])
+	set_servo_pulse(servo_num-4,pulse_servo[servo_num-1])
 	time.sleep(0.1)
 	servo_angle[servo_num] += ang_ser
         angle_conv()
         #print(servo_angle[servo_num])
         set_servo_pulse(servo_num,pulse_servo[servo_num])
 	time.sleep(0.1)
-	servo_angle[servo_num-4] += 45
+	servo_angle[servo_num-1] += 45
         angle_conv()
         #print(servo_angle[servo_num-4])
-        set_servo_pulse(servo_num-4,pulse_servo[servo_num-4])
-        time.sleep(2)
+        set_servo_pulse(servo_num-4,pulse_servo[servo_num-1])
+        time.sleep(0.1)
 
 def body_move(servo_num,ang_ser):
 	servo_angle[servo_num] += ang_ser
@@ -66,25 +66,25 @@ for i in range(12):
 move_dist = input()
 move_angle = math.asin((move_dist/63)+(1/math.sqrt(2.0)))/math.pi*180-45	
 print(move_angle)
-leg_move(8,-move_angle)
-leg_move(9,move_angle)
+leg_move(2,-move_angle)
+leg_move(5,move_angle)
 for k in range(5):
 	leg_move(8,2*move_angle)
 	#print(servo_angle)
-	body_move(8,-move_angle)
+	body_move(2,-move_angle)
 	body_move(11,move_angle)
-	body_move(9,-move_angle)
-	body_move(10,move_angle)
-	time.sleep(0.2)
+	body_move(5,-move_angle)
+	body_move(8,move_angle)
+	time.sleep(0.1)
 	print(servo_angle)
-	leg_move(10,-2*move_angle)
+	leg_move(8,-2*move_angle)
 	leg_move(11,-2*move_angle)
-	body_move(8,-move_angle)
+	body_move(2,-move_angle)
 	body_move(11,move_angle)
-	body_move(9,-move_angle)
-	body_move(10,move_angle)
-	time.sleep(0.2)
-	leg_move(9,2*move_angle)
+	body_move(5,-move_angle)
+	body_move(8,move_angle)
+	time.sleep(0.1)
+	leg_move(5,2*move_angle)
 	print(servo_angle)
 	
 for i in range(16):
