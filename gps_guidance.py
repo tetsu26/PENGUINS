@@ -12,6 +12,7 @@ import micropyGPS
 import threading #gpsデータ取得用
 import pyproj    #gps座標変換のパッケージ
 import Adafruit_PCA9685
+import datetime
 gps = micropyGPS.MicropyGPS(9,'dd') #gps
 pwm = Adafruit_PCA9685.PCA9685()
 Heating_wire_pin = 17 #電熱線で使うピン指定
@@ -526,6 +527,7 @@ def getgps():
 class Data:
 
     #変数宣言    
+    date                                  #日付時間
     now               =  0.0              #たぶん時間
     acc               =  [0.0,0.0,0.0]    #加速度
     gyr               =  [0.0,0.0,0.0]    #ジャイロ
@@ -544,7 +546,10 @@ class Data:
     Penguin1_pos=[0.0,0.0]                #ペンギン1号の座標
     Penguin1_pos_xy=[0.0,0.0]             #ペンギン1号のxy座標
 
-    gps_flag=0
+    f                                    #sd書き込み用
+
+    gps_flag   =0                        #
+    date_flag = 0                        #日付時間を同期したか確認するためのフラグ
 
     #コンストラクタ
     def __init__(self):
@@ -554,8 +559,10 @@ class Data:
 
 
     def save_data(self):
-        self.f.write(str(self.acc[0])+","+str(self.acc[1])+","+str(self.acc[2])+","+ str(self.gyr[0])+"," + str(self.gyr[1]) + "," + str(self.gyr[2]) +","+ str(self.mag[0]) + "," + str(self.mag[1]) + "," + str(self.mag[2]))
-        self.f.write(str(self.Penguin1_pos[0])+","+str(self.Penguin1_pos[1])+","+str(self.orientation_deg)+","+str(self.current_deg)+","+str(self.ddeg)+"\n")
+        self.f.write(str(datetime.datetime.now()) + ",")
+        self.f.write(str(self.acc[0])+","+str(self.acc[1])+","+str(self.acc[2])+","+ str(self.gyr[0])+"," + str(self.gyr[1]) + "," + str(self.gyr[2]) +","+ str(self.mag[0]) + "," + str(self.mag[1]) + "," + str(self.mag[2]) + ",")
+        self.f.write(str(self.LNS[0]) + "," + str(self.LNS[1]) + "," + str(self.LNS_xy[0]) + "," + str_xy(self.LNS[1]) +str(self.Penguin1_pos[0])+","+str(self.Penguin1_pos[1])+","+str(self.Penguin1_pos_xy[0])+","+str(self.Penguin1_pos_xy[1])+","+
+        self.f.write(str(self.current_deg) + "," + str(self.distance) + "," + str(self.orientation_deg)+","+str(self.current_deg)+","+str(self.ddeg)+","+)
 
 def detouch_para():
     for i in range(3):
@@ -566,6 +573,7 @@ def detouch_para():
     time.sleep(1.0)
     GPIO.output(Heating_wire_pin,0)    
     print "para detouched dazo~"
+　　f.write("para detouched\n")
     time.sleep(1.0)
 
 def get_data():
@@ -611,25 +619,29 @@ def get_data():
 #進む方向を決定
 def orientation():
     if (data.ddeg>data.range):
-        print ("Turn Rght dazo~")
+        print ("Turn Rght dazo~\n")
+        f.print ("Turn Right\n")
         turn_right()
     elif (data.ddeg<-data.range):
-        print ("Turn Left dazo~")
+        print ("Turn Left dazo~\n")
+        f.print ("Turn Left\n")
         turn_left()
     else :
         print ("Go Straight dazo~\n")
+        f.print ("Go Straight\n")
         walk()
 
     #LNSに5mまで近づいた時
     if (data.distance<5):
         print ("LNS is close dane~~~")
+        f.print ("LNS is close\n")
         data.gps_flag=1
 
 #ひっくり返ってないかチェック
 def turn_over_check():
     if (data.acc[2]<0.4): #Z軸の加速度で評価
         print ("korondazo~~~~~")
-
+        f.print ("turn over\n")
 
 
 if __name__ == "__main__":
