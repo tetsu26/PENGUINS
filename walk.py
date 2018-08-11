@@ -78,7 +78,7 @@ def leg_move(servo_num,ang_ser):
         set_servo_pulse(servo_num-1,pulse_servo[servo_num-1])
         time.sleep(2)
 
-def body_move(num_1,num_2,num_3,num_4,ang_ser):
+def body_move_1(num_1,num_2,num_3,num_4,ang_ser):
 	ang_ser = ang_ser / 20.0
 	for i in range(20):
 		servo_angle[num_1] -= ang_ser
@@ -105,7 +105,7 @@ leg_move(8,30)
 for k in range(5):
 	leg_move(2,60)
 	#print(servo_angle)
-	body_move(2,5,8,11,30)
+	body_move_1(2,5,8,11,30)
 	#body_move(2,-30)
 	#body_move(5,30)
 	#body_move(8,-30)
@@ -114,7 +114,7 @@ for k in range(5):
 	print(servo_angle)
 	leg_move(11,-60)
 	leg_move(5,-60)
-	body_move(2,5,8,11,30)
+	body_move_1(2,5,8,11,30)
 	#body_move(2,-30)
 	#body_move(5,30)
 	#body_move(8,-30)
