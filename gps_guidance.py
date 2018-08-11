@@ -12,7 +12,9 @@ import micropyGPS
 import threading #gpsデータ取得用
 import pyproj    #gps座標変換のパッケージ
 import Adafruit_PCA9685
+import commands  #gpsから内部時間を補正するために使用
 import datetime
+
 gps = micropyGPS.MicropyGPS(9,'dd') #gps
 pwm = Adafruit_PCA9685.PCA9685()
 Heating_wire_pin = 17 #電熱線で使うピン指定
@@ -22,6 +24,7 @@ init_pulse_servo=[0,0,0,0,0,0,0,0,0,0,0,0]
 
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(Heating_wire_pin,GPIO.OUT)
+
 
 def set_servo_pulse(channel, pulse):
     pulse_length = 1000000    # 1,000,000 us per second
@@ -498,7 +501,7 @@ def getgps():
     data.Penguin1_pos  = [round(gps.latitude[0],9),round(gps.longitude[0],9)]#小数点8桁以上だとエラー出るので7桁まで
 
     EPSG4612 = pyproj.Proj("+init=EPSG:4612")
-    EPSG2452 = pyproj.Proj("+init=EPSG:2452")#東北地方中心平面直角座標系10経
+    EPSG2452 = pyproj.Proj("+init=EPSG:2452") #東北地方中心平面直角座標系10経
 
 
     if(data.Penguin1_pos[1] != 0.0):
@@ -527,7 +530,7 @@ def getgps():
 class Data:
 
     #変数宣言    
-    date                                  #日付時間
+    date              =datetime.datetime.now()                    #日付時間
     now               =  0.0              #たぶん時間
     acc               =  [0.0,0.0,0.0]    #加速度
     gyr               =  [0.0,0.0,0.0]    #ジャイロ
@@ -539,14 +542,13 @@ class Data:
     current_deg       =  0.0              #機体が向いている角度
     ddeg              =  0.0              #LNSへの角度と機体が向いている角度の差
     range             =  30               #目標角への許容誤差(プラスマイナスrange度)
-   
+    f=open('PENGUIN_log.txt','a')   
     #座標
     LNS=[38.26619000, 140.84301667]           #ローソン南極支店の座標(天野邸)
     LNS_xy=[38.28005833,140.85160667]     #ローソン南極支店のxy座標
     Penguin1_pos=[0.0,0.0]                #ペンギン1号の座標
     Penguin1_pos_xy=[0.0,0.0]             #ペンギン1号のxy座標
 
-    f                                    #sd書き込み用
 
     gps_flag   =0                        #
     date_flag = 0                        #日付時間を同期したか確認するためのフラグ
@@ -554,15 +556,15 @@ class Data:
     #コンストラクタ
     def __init__(self):
     #ログ
-        self.f=open('PENGUIN_log.txt','a')
-        self.f.write("\n===============New Log From Here dazo!===============\n")
+       self. f.write("\n===============New Log From Here dazo!===============\n")
 
 
     def save_data(self):
-        self.f.write(str(datetime.datetime.now()) + ",")
-        self.f.write(str(self.acc[0])+","+str(self.acc[1])+","+str(self.acc[2])+","+ str(self.gyr[0])+"," + str(self.gyr[1]) + "," + str(self.gyr[2]) +","+ str(self.mag[0]) + "," + str(self.mag[1]) + "," + str(self.mag[2]) + ",")
-        self.f.write(str(self.LNS[0]) + "," + str(self.LNS[1]) + "," + str(self.LNS_xy[0]) + "," + str_xy(self.LNS[1]) +str(self.Penguin1_pos[0])+","+str(self.Penguin1_pos[1])+","+str(self.Penguin1_pos_xy[0])+","+str(self.Penguin1_pos_xy[1])+","+
-        self.f.write(str(self.current_deg) + "," + str(self.distance) + "," + str(self.orientation_deg)+","+str(self.current_deg)+","+str(self.ddeg)+","+)
+        self.date=datetime.datetime.now()
+#        self.f.write(str(self.date)+",")
+#        self.f.write(str(self.acc[0])+","+str(self.acc[1])+","+str(self.acc[2])+","+ str(self.gyr[0])+"," + str(self.gyr[1]) + "," + str(self.gyr[2]) +","+ str(self.mag[0]) + "," + str(self.mag[1]) + "," + str(self.mag[2]) + ",")
+#        self.f.write(str(self.LNS[0]) + "," + str(self.LNS[1]) + "," + str(self.LNS_xy[0]) + "," + str_xy(self.LNS[1]) +str(self.Penguin1_pos[0])+","+str(self.Penguin1_pos[1])+","+str(self.Penguin1_pos_xy[0])+","+str(self.Penguin1_pos_xy[1]+",")
+#        f.write(str(self.current_deg) + "," + str(self.distance) + "," + str(self.orientation_deg)+","+str(self.current_deg)+","+str(self.ddeg) + ",")
 
 def detouch_para():
     for i in range(3):
@@ -573,7 +575,7 @@ def detouch_para():
     time.sleep(1.0)
     GPIO.output(Heating_wire_pin,0)    
     print "para detouched dazo~"
-　　f.write("para detouched\n")
+    f.write("para detouched\n")
     time.sleep(1.0)
 
 def get_data():
@@ -620,28 +622,28 @@ def get_data():
 def orientation():
     if (data.ddeg>data.range):
         print ("Turn Rght dazo~\n")
-        f.print ("Turn Right\n")
+#        f.print ("Turn Right\n")
         turn_right()
     elif (data.ddeg<-data.range):
         print ("Turn Left dazo~\n")
-        f.print ("Turn Left\n")
+#        f.print ("Turn Left\n")
         turn_left()
     else :
         print ("Go Straight dazo~\n")
-        f.print ("Go Straight\n")
+#        f.print ("Go Straight\n")
         walk()
 
     #LNSに5mまで近づいた時
     if (data.distance<5):
         print ("LNS is close dane~~~")
-        f.print ("LNS is close\n")
+#        f.print ("LNS is close\n")
         data.gps_flag=1
 
 #ひっくり返ってないかチェック
 def turn_over_check():
     if (data.acc[2]<0.4): #Z軸の加速度で評価
         print ("korondazo~~~~~")
-        f.print ("turn over\n")
+#        f.print ("turn over\n")
 
 
 if __name__ == "__main__":
@@ -660,7 +662,7 @@ if __name__ == "__main__":
     data = Data()
 
     kaikyaku()
-    detouch_para()
+#    detouch_para()
 
     while data.gps_flag==0:
 
@@ -668,5 +670,4 @@ if __name__ == "__main__":
         turn_over_check()
         orientation()
         time.sleep(0.1)
-
 

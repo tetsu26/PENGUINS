@@ -1,4 +1,3 @@
-echo 'a'
 #!/bin/sh
 echo start at `/bin/date`
 for i in 5 5; do

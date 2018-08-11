@@ -52,8 +52,8 @@ for i in range(10):
 	ang2+=9
 """
 
-global servo_angle,pulse_servo 
-servo_angle=[0,90,120,0,90,120,0,90,120,0,90,120] 
+global servo_angle,pulse_servo
+servo_angle=[0,90,90,0,90,120,0,90,150,0,90,120]
 pulse_servo=[0,0,0,0,0,0,0,0,0,0,0,0]
 
 def angle_conv():
@@ -62,7 +62,7 @@ def angle_conv():
         return pulse_servo
 
 def leg_move(servo_num,ang_ser):
-	servo_angle[servo_num-1] -= 45
+	servo_angle[servo_num-1] -= 20
 	angle_conv() 
 	#print(servo_angle[servo_num-4])
 	set_servo_pulse(servo_num-1,pulse_servo[servo_num-1])
@@ -72,57 +72,42 @@ def leg_move(servo_num,ang_ser):
         #print(servo_angle[servo_num])
         set_servo_pulse(servo_num,pulse_servo[servo_num])
 	time.sleep(0.1)
-	servo_angle[servo_num-1] += 45
+	servo_angle[servo_num-1] += 20
         angle_conv()
         #print(servo_angle[servo_num-4])
         set_servo_pulse(servo_num-1,pulse_servo[servo_num-1])
-        time.sleep(2)
+        time.sleep(0.1)
 
-def body_move(num_1,num_2,num_3,num_4,ang_ser):
-	ang_ser = ang_ser / 20.0
-	for i in range(20):
-		servo_angle[num_1] -= ang_ser
-		servo_angle[num_2] += ang_ser
-		servo_angle[num_3] -= ang_ser
-		servo_angle[num_4] += ang_ser
-       		angle_conv()
-        	#print(servo_angle[servo_num])
-        	set_servo_pulse(num_1,pulse_servo[num_1])
-        	#time.sleep(0.01)
-		set_servo_pulse(num_2,pulse_servo[num_2])
-                #time.sleep(0.01)
-		set_servo_pulse(num_3,pulse_servo[num_3])
-                #time.sleep(0.01)
-		set_servo_pulse(num_4,pulse_servo[num_4])
-                #time.sleep(0.1)
+def body_move(servo_num,ang_ser):
+	servo_angle[servo_num] += ang_ser
+        angle_conv()
+        #print(servo_angle[servo_num])
+        set_servo_pulse(servo_num,pulse_servo[servo_num])
+        #time.sleep(0.05)
 
 angle_conv()
 for i in range(12):
 	set_servo_pulse(i,pulse_servo[i])
-	time.sleep(0.1)
-leg_move(2,-30)
-leg_move(8,30)
-for k in range(5):
-	leg_move(2,60)
-	#print(servo_angle)
-	body_move(2,5,8,11,30)
-	#body_move(2,-30)
-	#body_move(5,30)
-	#body_move(8,-30)
-	#body_move(11,30)
-	time.sleep(0.2)
-	print(servo_angle)
-	leg_move(11,-60)
-	leg_move(5,-60)
-	body_move(2,5,8,11,30)
-	#body_move(2,-30)
-	#body_move(5,30)
-	#body_move(8,-30)
-	#body_move(11,30)
-	time.sleep(0.2)
-	leg_move(8,60)
-	print(servo_angle)
-	
+        time.sleep(0.1)
+
+def turn(ang_turn):
+	ang_turn = ang_turn / 4.0
+	for k in range(4):
+		print(ang_turn)
+		body_move(2,-ang_turn)
+                body_move(5,-ang_turn)
+                body_move(8,-ang_turn)
+                body_move(11,-ang_turn)
+		leg_move(8,ang_turn)
+		leg_move(2,60.0-ang_turn)
+		body_move()
+		body_move(9,-ang_turn)
+		body_move(10,-ang_turn)
+		body_move(11,-ang_turn)
+
+time.sleep(5)
+ang_turn = input()
+turn(ang_turn)
 for i in range(16):
   pwm.set_pwm(i, 0, 0)
 
