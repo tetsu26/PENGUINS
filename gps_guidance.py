@@ -19,8 +19,8 @@ gps = micropyGPS.MicropyGPS(9,'dd') #gps
 pwm = Adafruit_PCA9685.PCA9685()
 Heating_wire_pin = 17 #電熱線で使うピン指定
 
-init_servo_angle=[10,10,10,10,90,90,90,90,120,120,120,120]
-init_pulse_servo=[0,0,0,0,0,0,0,0,0,0,0,0]
+servo_angle=[0,80,90,0,80,120,0,80,150,0,80,120]
+pulse_servo=[0,0,0,0,0,0,0,0,0,0,0,0]
 
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(Heating_wire_pin,GPIO.OUT)
@@ -35,6 +35,7 @@ def set_servo_pulse(channel, pulse):
     #pulse *= 1000
     pulse //= pulse_length
     pwm.set_pwm(channel, 0, pulse)
+
 # Set frequency to 60hz, good for servos.
 pwm.set_pwm_freq(50)
 
@@ -50,8 +51,8 @@ def angle_conv():
 
 def kaikyaku():
     global servo_angle,pulse_servo
-    servo_angle = init_servo_angle
-    pulse_servo = init_pulse_servo
+    servo_angle=[0,90,120,0,90,120,0,90,120,0,90,120]
+    pulse_servo=[0,0,0,0,0,0,0,0,0,0,0,0]
     servo_angle[0] = 90
     servo_angle[1] = 90
     angle_conv()
@@ -70,21 +71,39 @@ def kaikyaku():
 #        pwm.set_pwm(i, 0, 0)
 
 def leg_move(servo_num,ang_ser):
-    servo_angle[servo_num-4] -= 45
-    angle_conv()
-    #print(servo_angle[servo_num-4])
-    set_servo_pulse(servo_num-4,pulse_servo[servo_num-4])
-    time.sleep(0.1)
-    servo_angle[servo_num] += ang_ser
-    angle_conv()
-    #print(servo_angle[servo_num])
-    set_servo_pulse(servo_num,pulse_servo[servo_num])
-    time.sleep(0.1)
-    servo_angle[servo_num-4] += 45
-    angle_conv()
-    #print(servo_angle[servo_num-4])
-    set_servo_pulse(servo_num-4,pulse_servo[servo_num-4])
-    time.sleep(0.2)
+        servo_angle[servo_num-1] -= 45
+        angle_conv()
+        #print(servo_angle[servo_num-4])
+        set_servo_pulse(servo_num-1,pulse_servo[servo_num-1])
+        time.sleep(0.1)
+        servo_angle[servo_num] += ang_ser
+        angle_conv()
+        #print(servo_angle[servo_num])
+        set_servo_pulse(servo_num,pulse_servo[servo_num])
+        time.sleep(0.1)
+        servo_angle[servo_num-1] += 45
+        angle_conv()
+        #print(servo_angle[servo_num-4])
+        set_servo_pulse(servo_num-1,pulse_servo[servo_num-1])
+        time.sleep(2)
+
+def body_move_1(num_1,num_2,num_3,num_4,ang_ser):
+    ang_ser = ang_ser / 20.0
+    for i in range(20):
+        servo_angle[num_1] -= ang_ser
+        servo_angle[num_2] += ang_ser
+        servo_angle[num_3] -= ang_ser
+        servo_angle[num_4] += ang_ser
+        angle_conv()
+        #print(servo_angle[servo_num])
+        set_servo_pulse(num_1,pulse_servo[num_1])
+        #time.sleep(0.01)
+        set_servo_pulse(num_2,pulse_servo[num_2])
+        #time.sleep(0.01)
+        set_servo_pulse(num_3,pulse_servo[num_3])
+        #time.sleep(0.01)
+        set_servo_pulse(num_4,pulse_servo[num_4])
+        #time.sleep(0.1)
 
 def body_move(servo_num,ang_ser):
     servo_angle[servo_num] += ang_ser
@@ -95,58 +114,85 @@ def body_move(servo_num,ang_ser):
 
 def walk():
     global servo_angle,pulse_servo
-    servo_angle = [10,10,10,10,90,90,90,90,120,120,120,120]
-    pulse_servo = init_pulse_servo
+    servo_angle=[10,90,120,10,90,120,10,90,120,10,90,120]
+    pulse_servo=[0,0,0,0,0,0,0,0,0,0,0,0]
     angle_conv()
     for i in range(12):
         set_servo_pulse(i,pulse_servo[i])
         time.sleep(0.1)
-    move_dist = 13   #
-    move_angle = math.asin((move_dist/63)+(1/math.sqrt(2.0)))/math.pi*180-45
-    print(move_angle)
-    leg_move(8,-move_angle)
-    leg_move(9,move_angle)
+    leg_move(2,-30)
+    leg_move(8,30)
     for k in range(5):
-        leg_move(8,2*move_angle)
+        leg_move(2,60)
         #print(servo_angle)
-        body_move(8,-move_angle)
-        body_move(11,move_angle)
-        body_move(9,-move_angle)
-        body_move(10,move_angle)
-        time.sleep(0.1)
+        body_move_1(2,5,8,11,30)
+        #body_move(2,-30)
+        #body_move(5,30)
+        #body_move(8,-30)
+        #body_move(11,30)
+        time.sleep(0.2)
         print(servo_angle)
-        leg_move(10,-2*move_angle)
-        leg_move(11,-2*move_angle)
-        body_move(8,-move_angle)
-        body_move(11,move_angle)
-        body_move(9,-move_angle)
-        body_move(10,move_angle)
-        time.sleep(0.1)
-        leg_move(9,2*move_angle)
+        leg_move(11,-60)
+        leg_move(5,-60)
+        body_move_1(2,5,8,11,30)
+        #body_move(2,-30)
+        #body_move(5,30)
+        #body_move(8,-30)
+        #body_move(11,30)
+        time.sleep(0.2)
+        leg_move(8,60)
         print(servo_angle)
-
-def turn(ang_turn):
-    servo_angle = [10,10,10,10,90,90,90,90,120,120,120,120]
-    pulse_servo = init_pulse_servo
-    ang_turn = ang_turn / 2.0
-    for k in range(2):
-        print(ang_turn)
-        leg_move(9,ang_turn)
-        leg_move(10,ang_turn)
-        leg_move(11,ang_turn)
-        leg_move(8,ang_turn)
-        body_move(8,-ang_turn)
-        body_move(9,-ang_turn)
-        body_move(10,-ang_turn)
-        body_move(11,-ang_turn)
 
 def turn_left():
     ang_turn = 45
-    turn(ang_turn)
+    #servo_angle = [10,80,90,10,80,120,10,80,150,10,80,120]
+    #pulse_servo = [0,0,0,0,0,0,0,0,0,0,0,0]
+    ang_turn = ang_turn / 4.0
+    for k in range(4):
+        print(ang_turn)
+        body_move(2,-ang_turn)
+        body_move(5,-ang_turn)
+        body_move(8,-ang_turn)
+        body_move(11,-ang_turn)
+        leg_move(8,ang_turn)
+        leg_move(2,60.0+ang_turn)
+        body_move(2,-30.0)
+        body_move(5,-30.0)
+        body_move(8,-30.0)
+        body_move(11,-30.0)
+        leg_move(5,60.0+ang_turn)
+        leg_move(11,ang_turn)
+        leg_move(5,-60.0)
+        body_move(2,30.0)
+        body_move(5,30.0)
+        body_move(8,30.0)
+        body_move(11,30.0)
+        leg_move(2,-60.0)
 
 def turn_right():
-    ang_turn = -45
-    turn(ang_turn)
+    ang_turn = 45
+    #servo_angle = [10,80,90,10,80,120,10,80,150,10,80,120]
+    #pulse_servo = [0,0,0,0,0,0,0,0,0,0,0,0]
+    for k in range(4):
+        print(ang_turn)
+        body_move(2,ang_turn)
+        body_move(5,ang_turn)
+        body_move(8,ang_turn)
+        body_move(11,ang_turn)
+        leg_move(2,-ang_turn)
+        leg_move(8,-60.0-ang_turn)
+        body_move(2,30.0)
+        body_move(5,30.0)
+        body_move(8,30.0)
+        body_move(11,30.0)
+        leg_move(5,-ang_turn)
+        leg_move(11,-ang_turn)
+        body_move(2,-30.0)
+        body_move(5,-30.0)
+        body_move(8,-30.0)
+        body_move(11,-30.0)
+        leg_move(8,60.0)
+        print(servo_angle)
 
 class SL_MPU9250:
     # 定数宣言
@@ -389,8 +435,8 @@ class SL_MPU9250:
             raise Exception('004 Mag sensor over flow')
 
 ##############################ここは手動で入力#######################################
-        manual_offsetMagX  = -2.5
-        manual_offsetMagY  = -25.0
+        manual_offsetMagX  = -24
+        manual_offsetMagY  = 7.5
         manual_offsetMagZ  = 0.0
 
         # μTへの変換
@@ -556,7 +602,7 @@ class Data:
     #コンストラクタ
     def __init__(self):
     #ログ
-       self. f.write("\n===============New Log From Here dazo!===============\n")
+       self.f.write("\n===============New Log From Here dazo!===============\n")
 
 
     def save_data(self):
@@ -620,22 +666,22 @@ def get_data():
 
 #進む方向を決定
 def orientation():
-    if (data.ddeg>data.range):
+    if (data.ddeg<-data.range):
         print ("Turn Rght dazo~\n")
 #        f.print ("Turn Right\n")
-        turn_right()
-    elif (data.ddeg<-data.range):
+#        turn_right()
+    elif (data.ddeg>data.range):
         print ("Turn Left dazo~\n")
 #        f.print ("Turn Left\n")
-        turn_left()
+#        turn_left()
     else :
         print ("Go Straight dazo~\n")
 #        f.print ("Go Straight\n")
-        walk()
+#        walk()
 
     #LNSに5mまで近づいた時
-    if (data.distance<5):
-        print ("LNS is close dane~~~")
+    if (data.distance<3):
+#        print ("LNS is close dane~~~")
 #        f.print ("LNS is close\n")
         data.gps_flag=1
 
@@ -661,8 +707,9 @@ if __name__ == "__main__":
     #データ用class
     data = Data()
 
-    kaikyaku()
+#    kaikyaku()
 #    detouch_para()
+
 
     while data.gps_flag==0:
 
