@@ -16,6 +16,8 @@ import Adafruit_PCA9685
 import commands  #gpsから内部時間を補正するために使用
 import datetime
 
+PENGUIN_ID=2
+
 f=open('/home/pi/PENGUINS/PENGUIN_log.txt','a')
 f.write("\n===============New Log From Here dazo!===============\n")
 
@@ -447,7 +449,7 @@ class SL_MPU9250:
         rawZ    = self.gyroCoefficient * self.u2s(data[4] << 8 | data[5]) + self.offsetGyroZ
         return rawX, rawY, rawZ
 
-    def getMag(self):
+    def getMag(self,PENGUIN_ID):
         if self.MAG_ACCESS == False:
             # 磁気センサが有効ではない。
             raise Exception('002 Access to a sensor is invalid.')
@@ -495,9 +497,14 @@ class SL_MPU9250:
             raise Exception('004 Mag sensor over flow')
 
 ##############################ここは手動で入力#######################################
-        manual_offsetMagX  = -24
-        manual_offsetMagY  = 7.5
-        manual_offsetMagZ  = 0.0
+        if (PENGUIN_ID==1):
+            manual_offsetMagX  = -24
+            manual_offsetMagY  = 7.5
+            manual_offsetMagZ  = 0.0
+        else:
+            manual_offsetMagX  = -28
+            manual_offsetMagY  = -8.5
+            manual_offsetMagZ  = 0.0
 
         # μTへの変換
         if self.MAG_BIT==16:    # 16bit出力の時
@@ -521,7 +528,7 @@ class SL_MPU9250:
         self.setMagRegister('SELF_TEST','16bit')
         self.bus.write_i2c_block_data(self.addrAK8963, 0x0C, [0x40])
         time.sleep(1.0)
-        data = self.getMag()
+        data = self.getMag(PENGUIN_ID)
 
         print data
 
@@ -598,7 +605,7 @@ def opening_detect(): #解放検知
         if trim_pot < 500: #明るさのしきい値を100とする
             print('!!!!!!!!!!!!!!!!!!Break!!!!!!!!!!!!!!!!!!!')
             f.write ("Openig detect\n")
-            #break
+            break
         else:
             print("In the Carrier dazo~")
             f.write ("Carrier now\n")
@@ -714,7 +721,7 @@ def get_data():
     data.now     = time.time()
     data.acc     = sensor.getAccel()
     data.gyr     = sensor.getGyro()
-    data.mag     = sensor.getMag()
+    data.mag     = sensor.getMag(PENGUIN_ID)
     getgps()       #gpsデータ取得関数
 
     #機体の向いている方向を磁気センサーの値から算出
@@ -798,7 +805,7 @@ if __name__ == "__main__":
     # sensor.selfTestMag()
     #get_time()
     mag_correction1 = 8.1 #磁北を真北に補正する奴仙台では8.1　能代では8.9 
-    mag_correction2 = 45  #センサーの前方向とペンギンの前方向を一致させる補正
+    mag_correction2 = -90  #センサーの前方向とペンギンの前方向を一致させる補正
 
     #データ用class
     data = Data()
