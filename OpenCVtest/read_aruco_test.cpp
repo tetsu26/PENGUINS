@@ -1,83 +1,136 @@
-#include <iostream>
-#include <opencv2/aruco.hpp>
+using namespace std;
 #include <opencv2/core.hpp>
-#include <opencv2/imgcodecs.hpp>
-#include <opencv2/videoio.hpp>
+#include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
-
-
+#include <opencv2/aruco.hpp>
+#include <iostream>
+#include <cstring>
+#include <math.h>
+#include <fstream>
+#include <sstream>
+using namespace cv;
 
 int main(int argc, const char* argv[])
 {
-    if (argc < 2)
-    {
-        cerr << "Usage: (in.jpg|in.avi) [cameraParams.yml] [markerSize] [outImage]" << endl;
-        exit(0);
-    }
-
-    bool isVideoFile = true;
-    cv::Mat InImage;
-    cv::VideoCapture cap(argv[1]);
-    if (!cap.isOpened())
-    {
-        InImage = cv::imread(argv[1], cv::IMREAD_UNCHANGED);
-        isVideoFile = false;
-    }
-
+		//dictionary生成
+    Ptr<aruco::Dictionary> dictionary = aruco::getPredefinedDictionary(aruco::DICT_4X4_50);
+    
+	Mat InImage, OutImage;
+	Mat dst_Image;
+    InImage =  imread(argv[1], IMREAD_UNCHANGED);
+    InImage.copyTo(OutImage);
+   // imshow("in", InImage);
+    //waitKey(0);
+    
     int width, height = 0;
-    if (isVideoFile)
-    {
-        width  = cap.get(cv::CAP_PROP_FRAME_WIDTH);
-        height = cap.get(cv::CAP_PROP_FRAME_HEIGHT);
+	width  = InImage.cols;
+	height = InImage.rows;
+	
+	//カメラパラメータの読み込み
+	
+	FileStorage fs2("out_camera_data.xml", FileStorage::READ);
+    if (!fs2.isOpened()){
+        cout << "File can not be opened." << endl;
+        return -1;
     }
-    else
+     
+    Mat cameraMatrix, distCoeffs;
+    
+    fs2["camera_matrix"] >> cameraMatrix;
+    fs2["distortion_coefficients"] >> distCoeffs;
+
+    //マーカーの読み取りをする
+	vector<int> markerIds;
+	vector<vector<Point2f>> markerCorners, rejectedCandidates;
+	Ptr<aruco::DetectorParameters> parameters = aruco::DetectorParameters::create();
+	aruco::detectMarkers(InImage, dictionary, markerCorners, markerIds,parameters,rejectedCandidates);
+	vector<Vec3d> rvecs, tvecs;
+	rvecs.clear();
+	tvecs.clear();
+	aruco::estimatePoseSingleMarkers(markerCorners, 0.053, cameraMatrix, distCoeffs, rvecs, tvecs); //0.053 はマーカーの大きさ
+	//得られたベクトルの表示
+	/*
+	printf("rvecs:\n");
+	for(auto a: rvecs){
+		cout <<a<< endl;
+	}
+	printf("tvecs:\n");
+	for(auto a: tvecs){
+		cout <<a<< endl;
+	}
+	*/
+	for (int ii = 0; ii < markerIds.size(); ii++){
+		aruco::drawAxis(OutImage, cameraMatrix, distCoeffs, rvecs[ii], tvecs[ii], 0.1);
+	}
+	aruco::drawDetectedMarkers(OutImage,markerCorners, markerIds);
+	
+	stringstream  FileName;
+	FileName << "out" <<argv[2]<<".jpg";
+	string result = FileName.str();
+
+	imwrite(result,OutImage);
+	//imshow("out", OutImage);
+	//waitKey(0); 
+	
+	//LNSまでの距離を計算する
+	int readFlag = 0;
+	readFlag = markerIds.size();
+	
+	double distance[2] = {0},x[2],y[2],z[2],cos[2],deg[2];
+	x [0]= tvecs[0][0];
+	y [0]= tvecs[0][1];
+	z [0]= tvecs[0][2];
+	distance[0] = sqrt(x[0]*x[0]+y[0]*y[0]+z[0]*z[0]);
+	cos[0]= x[0]/z[0];
+	deg[0] = atan(cos[0]) * 180 / 3.14159265359;
+	
+	if(readFlag == 2)
+	{
+		x [1]= tvecs[1][0];
+		y [1]= tvecs[1][1];
+		z [1]= tvecs[1][2];
+		distance[1] = sqrt(x[1]*x[1]+y[1]*y[1]+z[1]*z[1]);
+		cos[1]= x[1]/z[1];
+		deg[1] = atan(cos[1]) * 180 / 3.14159265359;
+	}
+	
+	//csvに入れてデータの受け渡しをする
+	
+	int flag[2] ={0}; //右向きなら１、左向きなら２を返	
+	
+	if(tvecs[0][0]  >=  0)
+	{
+		//printf("右向きだね〜\n");
+		flag[0] = 1;
+	}
+	else
+	{
+		//printf("左向きだね〜\n");
+		flag[0] = 2;
+	}
+	if(readFlag == 2){ //もし二つ見つけたら
+		if(tvecs[1][0]  >=  0)
+		{
+			//printf("右向きだね〜\n");
+			flag[1] = 1;
+		}
+		else
+		{
+			//printf("左向きだね〜\n");
+			flag[1] = 2;
+		}
+	}
+	
+	ofstream outputfile("read_result.csv",ios::app);
+    outputfile<<"\n"<<argv[2]<<","<<readFlag<<","<<markerIds[0]<<","<<distance[0]<<","<<deg[0];
+    if(readFlag == 2)
     {
-        width  = InImage.cols;
-        height = InImage.rows;
-    }
-
-    aruco::CameraParameters CamParam;
-    aruco::MarkerDetector MDetector;
-    std::vector<aruco::Marker> Markers;
-    float MarkerSize = -1;
-    unsigned int delay = isVideoFile ? 1 : 0;
-
-    if (argc >= 3)
-    {
-        CamParam.readFromXMLFile(argv[2]);
-        CamParam.resize(cv::Size(width, height));
-    }
-    if (argc >= 4) MarkerSize = atof(argv[3]);
-
-    cv::namedWindow("image", cv::WINDOW_AUTOSIZE);
-
-    for (;;)
-    {
-        if (isVideoFile) cap >> InImage;
-
-        if (InImage.empty()) break;
-
-        MDetector.detect(InImage, Markers, CamParam, MarkerSize);
-
-        for (unsigned int i = 0; i < Markers.size(); i++)
-        {
-#if DEBUG
-            cout << Markers[i] << endl;
-#endif
-            Markers[i].draw(InImage, cv::Scalar(0, 0, 255), 2);
-        }
-        if (CamParam.isValid() && MarkerSize != -1)
-        {
-            for (unsigned int i = 0; i < Markers.size(); i++)
-            {
-                aruco::CvDrawingUtils::draw3dCube(InImage, Markers[i], CamParam);
-            }
-        }
-        cv::imshow("image", InImage);
-
-        if (cv::waitKey(delay) >= 0) break;
-    }
-
-    cv::destroyAllWindows();
-    return 0;
+		outputfile<<"\n"<<argv[2]<<","<<readFlag<<","<<markerIds[1]<<","<<distance[1]<<","<<deg[1];
+	}
+    outputfile.close();
+	
+	//printf("距離は%lf[m]だゾ〜〜！角度は%lf[deg]だゾ！\n",distance,deg);
+	
+	return 0;
+	
 }
