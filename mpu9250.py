@@ -186,7 +186,7 @@ class SL_MPU9250:
         data    = self.bus.read_i2c_block_data(self.address, 0x3B ,6)
         rawX    = self.accelCoefficient * self.u2s(data[0] << 8 | data[1]) + self.offsetAccelX
         rawY    = self.accelCoefficient * self.u2s(data[2] << 8 | data[3]) + self.offsetAccelY
-        rawZ    = self.accelCoefficient * self.u2s(data[4] << 8 | data[5]) + self.offsetAccelZ
+        rawZ    = -(self.accelCoefficient * self.u2s(data[4] << 8 | data[5]) + self.offsetAccelZ)
         return rawX, rawY, rawZ
 
     # ジャイロ値を取得します。
@@ -339,18 +339,18 @@ if __name__ == "__main__":
         gyr     = sensor.getGyro()
         mag     = sensor.getMag()
         
-#        print "%+8.7f" % acc[0] + " ",
-#        print "%+8.7f" % acc[1] + " ",
-#        print "%+8.7f" % acc[2] + " ",
+        print "%+8.7f" % acc[0] + " ",
+        print "%+8.7f" % acc[1] + " ",
+        print "%+8.7f" % acc[2] + " \n",
 #        print " |   ",
 #        print "%+8.7f" % gyr[0] + " ",
 #        print "%+8.7f" % gyr[1] + " ",
 #        print "%+8.7f" % gyr[2] + " ",
 #        print " |   ",
 
-        print "%+8.7f" % mag[0] + " ",
-        print "%+8.7f" % mag[1] + " ",
-        print "%+8.7f" % mag[2]
+#        print "%+8.7f" % mag[0] + " ",
+#        print "%+8.7f" % mag[1] + " ",
+#        print "%+8.7f" % mag[2]
 
         sleepTime       = 0.1 - (time.time() - now)
         if sleepTime < 0.0:

@@ -3,6 +3,7 @@
 
 from __future__ import division
 
+import os
 import RPi.GPIO as GPIO
 import smbus
 import time
@@ -15,6 +16,9 @@ import Adafruit_PCA9685
 import commands  #gpsから内部時間を補正するために使用
 import datetime
 
+f=open('/home/pi/PENGUINS/PENGUIN_log.txt','a')
+f.write("\n===============New Log From Here dazo!===============\n")
+
 gps = micropyGPS.MicropyGPS(9,'dd') #gps
 pwm = Adafruit_PCA9685.PCA9685()
 Heating_wire_pin = 17 #電熱線で使うピン指定
@@ -24,6 +28,26 @@ pulse_servo=[0,0,0,0,0,0,0,0,0,0,0,0]
 
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(Heating_wire_pin,GPIO.OUT)
+
+#####照度センサー用#####
+DEBUG = 1
+SPICLK = 11
+SPIMISO = 9
+SPIMOSI = 10
+SPICS = 8
+
+# set up the SPI interface pins
+GPIO.setup(SPIMOSI, GPIO.OUT)
+GPIO.setup(SPIMISO, GPIO.IN)
+GPIO.setup(SPICLK, GPIO.OUT)
+GPIO.setup(SPICS, GPIO.OUT)
+
+photoTch = 0        # Channel of A/D 
+
+last_read = 0       # thsis keeps track of the last potentiometer value
+tolerance = 5       # to keep from being jittery we'll only change
+                    # volume when the pot has moved more than 5 'counts'
+
 
 
 def set_servo_pulse(channel, pulse):
@@ -193,6 +217,42 @@ def turn_right():
         body_move(11,-30.0)
         leg_move(8,60.0)
         print(servo_angle)
+
+#  AD変換奴
+# read SPI data from MCP3008 chip, 8 possible adc's (0 thru 7)
+def readadc(adcnum, clockpin, mosipin, misopin, cspin):
+    if ((adcnum > 7) or (adcnum < 0)):
+        return -1
+    GPIO.output(cspin, True)
+
+    GPIO.output(clockpin, False)  # start clock low
+    GPIO.output(cspin, False)     # bring CS low
+
+    commandout = adcnum
+    commandout |= 0x18  # start bit + single-ended bit
+    commandout <<= 3    # we only need to send 5 bits here
+    for i in range(5):
+        if (commandout & 0x80):
+            GPIO.output(mosipin, True)
+        else:
+            GPIO.output(mosipin, False)
+        commandout <<= 1
+        GPIO.output(clockpin, True)
+        GPIO.output(clockpin, False)
+
+    adcout = 0
+        # read in one empty bit, one null bit and 10 ADC bits
+    for i in range(12):
+        GPIO.output(clockpin, True)
+        GPIO.output(clockpin, False)
+        adcout <<= 1
+        if (GPIO.input(misopin)):
+            adcout |= 0x1
+
+    GPIO.output(cspin, True)
+        
+    adcout >>= 1       # first bit is 'null' so drop it
+    return adcout     
 
 class SL_MPU9250:
     # 定数宣言
@@ -376,7 +436,7 @@ class SL_MPU9250:
         data    = self.bus.read_i2c_block_data(self.address, 0x3B ,6)
         rawX    = self.accelCoefficient * self.u2s(data[0] << 8 | data[1]) + self.offsetAccelX
         rawY    = self.accelCoefficient * self.u2s(data[2] << 8 | data[3]) + self.offsetAccelY
-        rawZ    = self.accelCoefficient * self.u2s(data[4] << 8 | data[5]) + self.offsetAccelZ
+        rawZ    = -(self.accelCoefficient * self.u2s(data[4] << 8 | data[5]) + self.offsetAccelZ)
         return rawX, rawY, rawZ
 
     # ジャイロ値を取得します。
@@ -520,7 +580,30 @@ class SL_MPU9250:
 
 ###################################################################################
 
-def rungps():#gpsやつ
+def get_time(): #gpsから内部時計補正
+    check = commands.getoutput("sudo sh /home/pi/PENGUINS/setdatefromgps.sh")
+    print check
+
+def opening_detect(): #解放検知
+    while True:
+        trim_pot = readadc(photoTch, SPICLK, SPIMOSI, SPIMISO, SPICS)
+#        set_volume = trim_pot / (10.24 * 4) 
+#        set_volume = round(set_volume)
+#        set_volume = int(set_volume)
+#        print(set_volume)
+        print(trim_pot)
+#        get_data()
+        time.sleep(0.2)
+
+        if trim_pot < 500: #明るさのしきい値を100とする
+            print('!!!!!!!!!!!!!!!!!!Break!!!!!!!!!!!!!!!!!!!')
+            f.write ("Openig detect\n")
+            #break
+        else:
+            print("In the Carrier dazo~")
+            f.write ("Carrier now\n")
+
+def rungps(): #gpsやつ
     s = serial.Serial('/dev/serial0', 9600, timeout=10)
     s.readline() # 最初の1行は中途半端なデーターが読めることがあるので、捨てる
     while True:
@@ -576,41 +659,43 @@ def getgps():
 class Data:
 
     #変数宣言    
-    date              =datetime.datetime.now()                    #日付時間
-    now               =  0.0              #たぶん時間
-    acc               =  [0.0,0.0,0.0]    #加速度
-    gyr               =  [0.0,0.0,0.0]    #ジャイロ
-    mag               =  [0.0,0.0,0.0]    #磁気
+    date              =  datetime.datetime.now()    #日付時間
+    now               =  0.0                        #たぶん時間
+    acc               =  [0.0,0.0,0.0]              #加速度
+    gyr               =  [0.0,0.0,0.0]              #ジャイロ
+    mag               =  [0.0,0.0,0.0]              #磁気
 
-    current_deg       =  0.0              #現在機体が向いてい方向(以後角度は東が0度でプラスマイナス180度)
-    distance          =  0.0              #機体からLNSまでの距離
-    orientation_deg   =  0.0              #機体からLNSへの角度
-    current_deg       =  0.0              #機体が向いている角度
-    ddeg              =  0.0              #LNSへの角度と機体が向いている角度の差
-    range             =  30               #目標角への許容誤差(プラスマイナスrange度)
-    f=open('PENGUIN_log.txt','a')   
+    current_deg       =  0.0                        #現在機体が向いてい方向(以後角度は東が0度でプラスマイナス180度)
+    distance          =  0.0                        #機体からLNSまでの距離
+    orientation_deg   =  0.0                        #機体からLNSへの角度
+    current_deg       =  0.0                        #機体が向いている角度
+    ddeg              =  0.0                        #LNSへの角度と機体が向いている角度の差
+    range             =  30                         #目標角への許容誤差(プラスマイナスrange度)
+
     #座標
-    LNS=[38.26619000, 140.84301667]           #ローソン南極支店の座標(天野邸)
-    LNS_xy=[38.28005833,140.85160667]     #ローソン南極支店のxy座標
-    Penguin1_pos=[0.0,0.0]                #ペンギン1号の座標
-    Penguin1_pos_xy=[0.0,0.0]             #ペンギン1号のxy座標
+    LNS=[38.26619000, 140.84301667]                 #ローソン南極支店の座標(天野邸)
+    LNS_xy=[38.28005833,140.85160667]               #ローソン南極支店のxy座標
+    Penguin1_pos=[0.0,0.0]                          #ペンギン1号の座標
+    Penguin1_pos_xy=[0.0,0.0]                       #ペンギン1号のxy座標
 
 
-    gps_flag   =0                        #
-    date_flag = 0                        #日付時間を同期したか確認するためのフラグ
+    gps_flag          =  0                          #gps誘導で近くまで来たか
+    date_flag         =  0                          #日付時間を同期したか確認するためのフラグ
+
+    turnover_counter  =  0                          #転んだ状態かを確認するカウンター
 
     #コンストラクタ
-    def __init__(self):
+#    def __init__(self):
     #ログ
-       self.f.write("\n===============New Log From Here dazo!===============\n")
+#       self.f.write("\n===============New Log From Here dazo!===============\n")
 
 
-    def save_data(self):
-        self.date=datetime.datetime.now()
-#        self.f.write(str(self.date)+",")
-#        self.f.write(str(self.acc[0])+","+str(self.acc[1])+","+str(self.acc[2])+","+ str(self.gyr[0])+"," + str(self.gyr[1]) + "," + str(self.gyr[2]) +","+ str(self.mag[0]) + "," + str(self.mag[1]) + "," + str(self.mag[2]) + ",")
-#        self.f.write(str(self.LNS[0]) + "," + str(self.LNS[1]) + "," + str(self.LNS_xy[0]) + "," + str_xy(self.LNS[1]) +str(self.Penguin1_pos[0])+","+str(self.Penguin1_pos[1])+","+str(self.Penguin1_pos_xy[0])+","+str(self.Penguin1_pos_xy[1]+",")
-#        f.write(str(self.current_deg) + "," + str(self.distance) + "," + str(self.orientation_deg)+","+str(self.current_deg)+","+str(self.ddeg) + ",")
+def save_data():
+    data.date=datetime.datetime.now()
+    f.write(str(data.date)+",")
+    f.write(str(data.acc[0])+","+str(data.acc[1])+","+str(data.acc[2])+","+ str(data.gyr[0])+"," + str(data.gyr[1]) + "," + str(data.gyr[2]) +","+ str(data.mag[0])+","+ str(data.mag[1])+","+ str(data.mag[2])+",")
+    f.write(str(data.LNS[0]) + "," + str(data.LNS[1]) + "," + str(data.LNS_xy[0]) + "," + str(data.LNS_xy[1]) + "," + str(data.Penguin1_pos[0])+","+str(data.Penguin1_pos[1])+","+ str(data.Penguin1_pos_xy[0])+","+str(data.Penguin1_pos_xy[1])+",")
+    f.write(str(data.current_deg) + "," + str(data.distance) + "," + str(data.orientation_deg)+","+str(data.current_deg)+","+str(data.ddeg) + ",")
 
 def detouch_para():
     for i in range(3):
@@ -662,35 +747,45 @@ def get_data():
     print ("current_deg:%f"%data.current_deg)
     print ("ddeg:%f"%data.ddeg)
 
-    data.save_data() #取得したデータを保存
+    save_data() #取得したデータを保存
 
 #進む方向を決定
 def orientation():
-    if (data.ddeg<-data.range):
+    if (data.turnover_counter!=0):
+        sleep(1)
+    elif (data.ddeg<-data.range):
         print ("Turn Rght dazo~\n")
-#        f.print ("Turn Right\n")
+        f.write ("Turn Right\n")
 #        turn_right()
     elif (data.ddeg>data.range):
         print ("Turn Left dazo~\n")
-#        f.print ("Turn Left\n")
+        f.write ("Turn Left\n")
 #        turn_left()
     else :
         print ("Go Straight dazo~\n")
-#        f.print ("Go Straight\n")
+        f.write ("Go Straight\n")
 #        walk()
 
     #LNSに5mまで近づいた時
     if (data.distance<3):
-#        print ("LNS is close dane~~~")
-#        f.print ("LNS is close\n")
+        print ("LNS is close dane~~~")
+        f.write ("LNS is close\n")
         data.gps_flag=1
 
 #ひっくり返ってないかチェック
 def turn_over_check():
     if (data.acc[2]<0.4): #Z軸の加速度で評価
-        print ("korondazo~~~~~")
-#        f.print ("turn over\n")
+        print ("koronda?")
+        f.write ("turn over?\n")
+        data.turnover_counter+=1
+    else :
+        data.turnover_counter=0
 
+    if (data.turnover_counter>4):
+        print ("korondazo~~~~~")
+        f.write ("turn over\n")
+#        kaikyaku()
+        
 
 if __name__ == "__main__":
     #MPU9250
@@ -701,12 +796,15 @@ if __name__ == "__main__":
     sensor.setGyroRange(1000,True)
     sensor.setMagRegister('100Hz','16bit')
     # sensor.selfTestMag()
+    #get_time()
     mag_correction1 = 8.1 #磁北を真北に補正する奴仙台では8.1　能代では8.9 
     mag_correction2 = 45  #センサーの前方向とペンギンの前方向を一致させる補正
 
     #データ用class
     data = Data()
 
+
+    opening_detect()
 #    kaikyaku()
 #    detouch_para()
 
@@ -716,5 +814,6 @@ if __name__ == "__main__":
         get_data()
         turn_over_check()
         orientation()
-        time.sleep(0.1)
+        time.sleep(0.3)
+
 

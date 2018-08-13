@@ -3,6 +3,6 @@
 
 import commands
 
-check = commands.getoutput("./setdatefromgps.sh")
+check = commands.getoutput("sudo sh /home/pi/PENGUINS/setdatefromgps.sh")
 
 print check
